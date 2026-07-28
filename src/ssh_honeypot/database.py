@@ -10,9 +10,9 @@ import logging
 import os
 import sqlite3
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from config import DatabaseConfig, config
+from ssh_honeypot.config import DatabaseConfig, config
 
 logger = logging.getLogger(__name__)
 
@@ -278,7 +278,7 @@ def get_hourly_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
     try:
         cursor = conn.execute(
             """
-            SELECT strftime('%Y-%m-%d %H:00', timestamp) as hour,
+            SELECT strftime('%%Y-%%m-%%d %%H:00', timestamp) as hour,
                    COUNT(*) as count
             FROM attack_logs
             GROUP BY hour
@@ -300,7 +300,7 @@ def get_daily_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
     try:
         cursor = conn.execute(
             """
-            SELECT strftime('%Y-%m-%d', timestamp) as date,
+            SELECT strftime('%%Y-%%m-%%d', timestamp) as date,
                    COUNT(*) as count
             FROM attack_logs
             GROUP BY date

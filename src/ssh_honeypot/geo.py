@@ -9,7 +9,7 @@ import logging
 import os
 from typing import Dict, Optional
 
-from config import GeoConfig, config
+from ssh_honeypot.config import GeoConfig, config
 
 logger = logging.getLogger(__name__)
 

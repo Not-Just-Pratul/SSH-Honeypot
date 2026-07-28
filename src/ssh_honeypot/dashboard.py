@@ -1,8 +1,8 @@
 """Streamlit SOC Dashboard for SSH Honeypot.
 
-Redesigned following the Warp design system spec:
-warm dark canvas, off-white primary, Inter + DM Mono typography,
-tight radii, hairline elevation, no drop shadows.
+Renders a real-time security operations center monitoring dashboard
+with attack statistics, charts, geolocation map, live feed, filtering
+capabilities, and data export functionality.
 """
 
 import json as _json
@@ -15,7 +15,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 import folium
-from database import (
+from ssh_honeypot.database import (
     filter_logs,
     get_all_logs,
     get_country_stats,
@@ -34,8 +34,8 @@ from database import (
     export_json,
     search_logs,
 )
-from config import config
-from geo import bulk_lookup
+from ssh_honeypot.config import config
+from ssh_honeypot.geo import bulk_lookup
 
 COLORS = {
     "dark": {
@@ -106,6 +106,7 @@ def _plotly_layout(c: dict) -> dict:
 
 
 def _apply_design(theme: str = "dark") -> None:
+    """Apply custom CSS styling based on the selected theme."""
     c = _c(theme)
     st.markdown(
         f"""
@@ -290,7 +291,7 @@ def _apply_design(theme: str = "dark") -> None:
 
 
 def _render_header(theme: str) -> None:
-    c = _c(theme)
+    """Render the dashboard page header."""
     st.markdown(
         f"""
         <div class="page-header">
@@ -303,7 +304,7 @@ def _render_header(theme: str) -> None:
 
 
 def _render_stats(stats: dict, theme: str) -> None:
-    c = _c(theme)
+    """Render the statistics grid with key metrics."""
     st.markdown('<div class="stat-grid">', unsafe_allow_html=True)
 
     items = [
@@ -333,6 +334,7 @@ def _render_stats(stats: dict, theme: str) -> None:
 
 
 def _render_overview(df: pd.DataFrame, theme: str) -> None:
+    """Render the overview page with summary stats and timeline."""
     st.markdown('<div class="section-title">Overview</div>', unsafe_allow_html=True)
 
     if df.empty:
@@ -383,6 +385,7 @@ def _render_overview(df: pd.DataFrame, theme: str) -> None:
 
 
 def _render_charts(df: pd.DataFrame, theme: str) -> None:
+    """Render the charts page with multiple attack visualizations."""
     st.markdown('<div class="section-title">Charts</div>', unsafe_allow_html=True)
 
     if df.empty:
@@ -504,6 +507,7 @@ def _render_charts(df: pd.DataFrame, theme: str) -> None:
 
 
 def _render_map(df: pd.DataFrame) -> None:
+    """Render the interactive Folium geolocation map."""
     st.markdown('<div class="section-title">Interactive Map</div>', unsafe_allow_html=True)
 
     if df.empty or "latitude" not in df.columns or "longitude" not in df.columns:
@@ -544,13 +548,13 @@ def _render_map(df: pd.DataFrame) -> None:
 
 
 def _render_live_feed(df: pd.DataFrame, theme: str) -> None:
+    """Render the live attack feed."""
     st.markdown('<div class="section-title">Live Feed</div>', unsafe_allow_html=True)
 
     if df.empty:
         st.info("No attack data yet. Waiting for connections...")
         return
 
-    c = _c(theme)
     feed_df = df[["timestamp", "ip", "country", "username", "status"]].head(50)
 
     for _, row in feed_df.iterrows():
@@ -571,6 +575,7 @@ def _render_live_feed(df: pd.DataFrame, theme: str) -> None:
 
 
 def _render_filters(df: pd.DataFrame) -> pd.DataFrame:
+    """Render filter controls and return filtered dataframe."""
     st.markdown('<div class="section-title">Filters & Search</div>', unsafe_allow_html=True)
 
     with st.expander("Filter Attacks", expanded=False):
@@ -625,6 +630,7 @@ def _render_filters(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _render_stats_tab(df: pd.DataFrame) -> None:
+    """Render in-depth statistics tab."""
     st.markdown('<div class="section-title">Statistics</div>', unsafe_allow_html=True)
 
     if df.empty:
@@ -661,6 +667,11 @@ def _render_stats_tab(df: pd.DataFrame) -> None:
 
 
 def _export_pdf() -> str:
+    """Generate a PDF report of honeypot statistics.
+
+    Returns:
+        Path to the generated PDF file.
+    """
     from fpdf import FPDF
     from fpdf.enums import XPos, YPos
 
@@ -703,6 +714,7 @@ def _export_pdf() -> str:
 
 
 def _render_export() -> None:
+    """Render export controls for data export."""
     st.markdown('<div class="section-title">Export Data</div>', unsafe_allow_html=True)
 
     export_format = st.radio("Export Format", ["CSV", "JSON", "Excel", "PDF Report"], key="export_format")
@@ -720,14 +732,15 @@ def _render_export() -> None:
 
 
 def render_dashboard() -> None:
-    theme = st.session_state.get("theme", "dark")
+    """Main dashboard render function. Call this from Streamlit."""
+    theme = st.session_state.get("theme", config.dashboard.theme)
     _apply_design(theme)
 
     st.set_page_config(
-        page_title="SSH Honeypot SOC Dashboard",
-        page_icon="🛡️",
-        layout="wide",
-        initial_sidebar_state="expanded",
+        page_title=config.dashboard.page_title,
+        page_icon=config.dashboard.page_icon,
+        layout=config.dashboard.layout,
+        initial_sidebar_state=config.dashboard.initial_sidebar_state,
     )
 
     _render_header(theme)

@@ -17,3 +17,12 @@ keys/
 *.swp
 *.swo
 *~
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage/

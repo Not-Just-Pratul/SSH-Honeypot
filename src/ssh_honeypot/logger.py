@@ -10,8 +10,9 @@ import threading
 from logging.handlers import RotatingFileHandler
 from typing import Any, Dict
 
-from database import insert_attack
-from geo import lookup_ip
+from ssh_honeypot.database import insert_attack
+from ssh_honeypot.geo import lookup_ip
+from ssh_honeypot.config import config
 
 
 def setup_logging(
@@ -125,24 +126,38 @@ def record_attack(event: Dict[str, Any]) -> None:
             record["status"],
             record["country"],
         )
-        _send_telegram_alert_async(record)
+        _send_alerts_async(record)
     except Exception as exc:
         honeypot_logger.error("Failed to record attack event: %s", exc)
 
 
-def _send_telegram_alert_async(record: Dict[str, Any]) -> None:
-    """Send a Telegram notification in a background thread."""
-    token = config.alerts.telegram_bot_token
-    chat_id = config.alerts.telegram_chat_id
-    if not token or not chat_id:
-        return
+def _send_alerts_async(record: Dict[str, Any]) -> None:
+    """Send alert notifications in a background thread.
 
+    Dispatches to all configured alert channels.
+    """
     thread = threading.Thread(
-        target=_send_telegram_alert,
-        args=(record, token, chat_id),
+        target=_send_all_alerts,
+        args=(record,),
         daemon=True,
     )
     thread.start()
+
+
+def _send_all_alerts(record: Dict[str, Any]) -> None:
+    """Send alerts through all configured channels.
+
+    Args:
+        record: The attack record dict.
+    """
+    if config.alerts.telegram_bot_token and config.alerts.telegram_chat_id:
+        _send_telegram_alert(record, config.alerts.telegram_bot_token, config.alerts.telegram_chat_id)
+
+    if config.alerts.discord_webhook_url:
+        _send_discord_alert(record, config.alerts.discord_webhook_url)
+
+    if config.alerts.slack_webhook_url:
+        _send_slack_alert(record, config.alerts.slack_webhook_url)
 
 
 def _send_telegram_alert(record: Dict[str, Any], token: str, chat_id: str) -> None:
@@ -163,7 +178,7 @@ def _send_telegram_alert(record: Dict[str, Any], token: str, chat_id: str) -> No
             f"Method: `{record.get('auth_method', 'N/A')}`\n"
             f"Country: {record.get('country', 'N/A')}\n"
             f"Status: {record.get('status', 'N/A')}\n"
-            f"Asn: {record.get('asn', 'N/A')}\n"
+            f"ASN: {record.get('asn', 'N/A')}\n"
             f"Time: {record.get('timestamp', 'N/A')}"
         )
         requests.post(
@@ -177,3 +192,90 @@ def _send_telegram_alert(record: Dict[str, Any], token: str, chat_id: str) -> No
         )
     except Exception as exc:
         honeypot_logger.error("Telegram alert failed: %s", exc)
+
+
+def _send_discord_alert(record: Dict[str, Any], webhook_url: str) -> None:
+    """Send a Discord notification for a new attack record.
+
+    Args:
+        record: The attack record dict.
+        webhook_url: Discord webhook URL.
+    """
+    try:
+        import requests
+
+        color = 15548997  # Discord red
+        embed = {
+            "title": "SSH Honeypot Alert",
+            "color": color,
+            "fields": [
+                {"name": "IP Address", "value": record.get("ip", "N/A"), "inline": True},
+                {"name": "Username", "value": record.get("username", "N/A"), "inline": True},
+                {"name": "Method", "value": record.get("auth_method", "N/A"), "inline": True},
+                {"name": "Country", "value": record.get("country", "N/A"), "inline": True},
+                {"name": "Status", "value": record.get("status", "N/A"), "inline": True},
+                {"name": "ASN", "value": record.get("asn", "N/A"), "inline": True},
+            ],
+            "timestamp": record.get("timestamp", ""),
+        }
+        requests.post(
+            webhook_url,
+            json={"embeds": [embed]},
+            timeout=5,
+        )
+    except Exception as exc:
+        honeypot_logger.error("Discord alert failed: %s", exc)
+
+
+def _send_slack_alert(record: Dict[str, Any], webhook_url: str) -> None:
+    """Send a Slack notification for a new attack record.
+
+    Uses Slack's block kit formatting.
+
+    Args:
+        record: The attack record dict.
+        webhook_url: Slack webhook URL.
+    """
+    try:
+        import requests
+
+        blocks = [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": "⚠️ SSH Honeypot Alert"},
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*IP:*\n{record.get('ip', 'N/A')}"},
+                    {"type": "mrkdwn", "text": f"*Username:*\n{record.get('username', 'N/A')}"},
+                ],
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*Method:*\n{record.get('auth_method', 'N/A')}"},
+                    {"type": "mrkdwn", "text": f"*Country:*\n{record.get('country', 'N/A')}"},
+                ],
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*ASN:*\n{record.get('asn', 'N/A')}"},
+                    {"type": "mrkdwn", "text": f"*Status:*\n{record.get('status', 'N/A')}"},
+                ],
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {"type": "mrkdwn", "text": f"Time: {record.get('timestamp', 'N/A')}"},
+                ],
+            },
+        ]
+        requests.post(
+            webhook_url,
+            json={"blocks": blocks},
+            timeout=5,
+        )
+    except Exception as exc:
+        honeypot_logger.error("Slack alert failed: %s", exc)

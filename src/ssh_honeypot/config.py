@@ -54,7 +54,7 @@ class HoneypotConfig:
     host_key_path: str = field(
         default_factory=lambda: _env_str(
             "HONEYPOT_HOST_KEY_PATH",
-            os.path.join(os.path.dirname(__file__), "keys", "ssh_host_rsa_key"),
+            os.path.join(os.path.dirname(__file__), "..", "..", "keys", "ssh_host_rsa_key"),
         )
     )
     reject_password: bool = field(default_factory=lambda: _env_bool("HONEYPOT_REJECT_PASSWORD", True))
@@ -69,26 +69,22 @@ class DatabaseConfig:
     db_path: str = field(
         default_factory=lambda: _env_str(
             "DATABASE_PATH",
-            os.path.join(os.path.dirname(__file__), "logs", "attack_logs.db"),
+            os.path.join(os.path.dirname(__file__), "..", "..", "logs", "attack_logs.db"),
         )
     )
     csv_path: str = field(
         default_factory=lambda: _env_str(
             "CSV_PATH",
-            os.path.join(os.path.dirname(__file__), "logs", "attack_logs.csv"),
+            os.path.join(os.path.dirname(__file__), "..", "..", "logs", "attack_logs.csv"),
         )
     )
     csv_rotation_size_mb: int = field(default_factory=lambda: _env_int("CSV_ROTATION_SIZE_MB", 10))
     csv_max_backups: int = field(default_factory=lambda: _env_int("CSV_MAX_BACKUPS", 5))
-    init_sql: str = field(
-        default_factory=lambda: _env_str(
-            "INIT_SQL_PATH",
-            os.path.join(os.path.dirname(__file__), "logs", "schema.sql"),
-        )
-    )
+    init_sql: str = field(default_factory=lambda: _env_str("INIT_SQL_PATH", ""))
 
 
 def _env_float(name: str, default: float) -> float:
+    """Read a float environment variable with fallback."""
     value = os.environ.get(name)
     if value is None or value.strip() == "":
         return default
@@ -172,6 +168,8 @@ class APIConfig:
     host: str = field(default_factory=lambda: _env_str("API_HOST", "0.0.0.0"))
     port: int = field(default_factory=lambda: _env_int("API_PORT", 8502))
     enabled: bool = field(default_factory=lambda: _env_bool("API_ENABLED", True))
+    jwt_secret: str = field(default_factory=lambda: _env_str("API_JWT_SECRET", ""))
+    jwt_enabled: bool = field(default_factory=lambda: _env_bool("API_JWT_ENABLED", False))
 
 
 @dataclass

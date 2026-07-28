@@ -1,0 +1,146 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ssh-honeypot"
+version = "1.0.0"
+description = "SSH Honeypot with live SOC dashboard, REST API, GeoIP enrichment, brute-force detection, and multi-channel alerts"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Not-Just-Pratul", email = "buildwithpratul@gmail.com"},
+]
+keywords = [
+    "honeypot",
+    "ssh",
+    "security",
+    "cybersecurity",
+    "soc",
+    "dashboard",
+    "geoip",
+    "threat-intelligence",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: System :: Networking :: Monitoring",
+    "Topic :: System :: Administration :: Monitoring",
+]
+dependencies = [
+    "paramiko>=3.4.0",
+    "streamlit>=1.28.0",
+    "plotly>=5.18.0",
+    "folium>=0.15.0",
+    "streamlit-folium>=0.17.0",
+    "pandas>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "geoip2>=4.7.0",
+    "openpyxl>=3.1.0",
+    "xlsxwriter>=3.1.0",
+    "requests>=2.31.0",
+    "fpdf2>=2.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "mypy>=1.7.0",
+    "bandit>=1.7.0",
+    "pre-commit>=3.6.0",
+]
+
+[project.scripts]
+ssh-honeypot = "ssh_honeypot.app:main"
+
+[project.urls]
+Homepage = "https://github.com/Not-Just-Pratul/SSH-Honeypot"
+Documentation = "https://github.com/Not-Just-Pratul/SSH-Honeypot#readme"
+Repository = "https://github.com/Not-Just-Pratul/SSH-Honeypot"
+Issues = "https://github.com/Not-Just-Pratul/SSH-Honeypot/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "network: marks tests requiring network access",
+]
+
+[tool.coverage.run]
+source = ["ssh_honeypot"]
+omit = [
+    "*/dashboard.py",
+    "*/tests/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 70
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "S",      # flake8-bandit (security)
+    "A",      # flake8-builtins
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "T20",    # flake8-print
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "RUF",    # ruff-specific
+]
+ignore = [
+    "T201",    # allow print() in CLI scripts
+    "S101",    # allow assert in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/ssh_honeypot/dashboard.py" = ["T201", "B"]
+"src/ssh_honeypot/app.py" = ["T201"]
+"tests/*" = ["S101", "S106"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]  # allow assert statements

@@ -23,8 +23,8 @@ import paramiko
 from paramiko.server import ServerInterface
 from paramiko.transport import Transport
 
-from config import HoneypotConfig, config
-from logger import record_attack, sanitize_string, setup_logging
+from ssh_honeypot.config import config
+from ssh_honeypot.logger import record_attack, sanitize_string
 
 logger = logging.getLogger("ssh_honeypot")
 
@@ -397,7 +397,7 @@ def handle_client_connection(
 
 def start_honeypot(
     host: Optional[str] = None,
-    port: Optional[int] = None,
+    port: Optional[str] = None,
 ) -> None:
     """Start the SSH honeypot server and listen for connections.
 
