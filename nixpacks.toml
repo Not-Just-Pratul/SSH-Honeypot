@@ -1,0 +1,16 @@
+[phases.setup]
+nixPkgs = ["openssh"]
+
+[phases.install]
+cmds = [
+  "pip install -e .",
+]
+
+[phases.setup]
+cmds = [
+  "mkdir -p keys data logs",
+  "openssl genrsa -out keys/ssh_host_rsa_key 2048 2>/dev/null || true",
+]
+
+[start]
+cmd = "python -m ssh_honeypot all --dashboard-port ${PORT:-8080}"

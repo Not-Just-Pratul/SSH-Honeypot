@@ -71,7 +71,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Expose ports
 # Honeypot: 2222, Dashboard: 8501, REST API: 8502
-EXPOSE 2222 8501 8502
+EXPOSE 2222 8501 8502 8080
 
 # Default environment variables
 ENV HONEYPOT_HOST=0.0.0.0 \
@@ -84,4 +84,5 @@ ENV HONEYPOT_HOST=0.0.0.0 \
     PYTHONDONTWRITEBYTECODE=1
 
 # Run the application
-CMD ["python", "-m", "ssh_honeypot", "all"]
+# Railway sets PORT; map it to the dashboard if present
+CMD python -m ssh_honeypot all --dashboard-port ${PORT:-8501}

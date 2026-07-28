@@ -26,3 +26,4 @@ build/
 .coverage
 htmlcov/
 coverage/
+*.mmdb

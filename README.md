@@ -233,6 +233,22 @@ The SOC dashboard provides real-time monitoring of all captured attack data:
 
 > 🎨 Toggle between **dark** and **light** themes in the sidebar.
 
+### Screenshots
+
+<div align="center">
+  <img src="screenshots/dashboard-overview.png" alt="Dashboard Overview" width="700"/>
+  <p><em>Overview — summary stats, attack timeline, and country breakdown</em></p>
+
+  <img src="screenshots/dashboard-map.png" alt="Interactive Attack Map" width="700"/>
+  <p><em>Interactive Map — attacker geolocations with country and ASN details</em></p>
+
+  <img src="screenshots/dashboard-feed.png" alt="Live Attack Feed" width="700"/>
+  <p><em>Live Feed — real-time scrolling feed of latest attacks</em></p>
+
+  <img src="screenshots/dashboard-stats.png" alt="Statistics Tab" width="700"/>
+  <p><em>Statistics — top attackers, peak hours, unique counts</em></p>
+</div>
+
 ---
 
 ## 🔌 REST API
@@ -304,7 +320,20 @@ docker compose --profile production up -d honeypot-worker
 
 ---
 
-## ⚙️ Configuration
+## 🚄 Railway Deployment
+
+Deploy the dashboard + API to Railway with one click:
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new)
+
+1. **Fork** the repo on GitHub
+2. **Create a Railway project** and connect your fork
+3. Railway **auto-detects** the Dockerfile — no extra config
+4. Set environment variables in Railway dashboard
+5. Railway exposes the dashboard on its generated URL
+6. The SSH honeypot runs internally (Railway's HTTP proxy doesn't expose raw TCP)
+
+> ⚠️ The SSH honeypot (port 2222) requires raw TCP. For full functionality, run on a VPS.## ⚙️ Configuration
 
 All configuration is via environment variables (see [`.env.example`](.env.example) for a complete reference).
 
