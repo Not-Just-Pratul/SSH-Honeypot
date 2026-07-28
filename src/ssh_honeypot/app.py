@@ -58,17 +58,21 @@ def start_dashboard() -> subprocess.Popen:
     """
     dashboard_port = config.dashboard.port
     dashboard_host = config.dashboard.host
-    dashboard_dir = os.path.dirname(os.path.abspath(__file__))
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(app_dir, "..", ".."))
+    runner_path = os.path.join(project_root, "dashboard_runner.py")
 
-    # Find the dashboard module path
-    dashboard_module = "ssh_honeypot.dashboard"
+    if not os.path.isfile(runner_path):
+        # Fallback: running as installed package — find the module file
+        import ssh_honeypot.dashboard as dash_mod
+        runner_path = os.path.abspath(dash_mod.__file__)
 
     cmd = [
         sys.executable,
         "-m",
         "streamlit",
         "run",
-        dashboard_module,
+        runner_path,
         "--server.port",
         str(dashboard_port),
         "--server.address",
@@ -80,7 +84,12 @@ def start_dashboard() -> subprocess.Popen:
 
     process = subprocess.Popen(
         cmd,
-        cwd=dashboard_dir,
+        cwd=app_dir,
+        env={
+            **os.environ,
+            "DATABASE_PATH": os.path.join(project_root, "logs", "attack_logs.db"),
+            "HONEYPOT_HOST_KEY_PATH": os.path.join(project_root, "keys", "ssh_host_rsa_key"),
+        },
     )
     return process
 
@@ -123,6 +132,18 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # Set absolute paths for database and host key so all processes use the same files.
+    # Config is loaded at import time so we must update the config object directly too.
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(app_dir, "..", ".."))
+
+    abs_db = os.path.join(project_root, "logs", "attack_logs.db")
+    abs_key = os.path.join(project_root, "keys", "ssh_host_rsa_key")
+    os.environ.setdefault("DATABASE_PATH", abs_db)
+    os.environ.setdefault("HONEYPOT_HOST_KEY_PATH", abs_key)
+    config.database.db_path = abs_db
+    config.honeypot.host_key_path = abs_key
 
     log_level = getattr(logging, args.log_level.upper(), logging.INFO)
     logger = logging.getLogger("ssh_honeypot")

@@ -146,9 +146,47 @@ ssh-honeypot all
 
 ### Quick Test
 
-From another terminal:
+Once the honeypot is running, test it by sending SSH connections:
+
 ```bash
-ssh -p 2222 -o StrictHostKeyChecking=no admin@localhost
+# Single test connection
+ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null admin@localhost
+
+# Try multiple common usernames
+for user in root admin test ubuntu oracle postgres; do
+    ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+        -o ConnectTimeout=3 -o BatchMode=yes ${user}@localhost 2>/dev/null
+done
+```
+
+### Attack Simulator
+
+A built-in attack simulator is available for testing and populating the dashboard:
+
+```bash
+# Send 20 attacks at 0.2s intervals (default)
+python scripts/attack_simulator.py
+
+# Send 100 attacks with 0.5s delay between each
+python scripts/attack_simulator.py 100 --delay 0.5
+```
+
+### Verify Data
+
+Check that attacks are being captured:
+
+```bash
+# Via REST API
+curl http://localhost:8502/api/stats
+curl http://localhost:8502/api/attacks/latest
+
+# Direct database query
+python -c "
+from ssh_honeypot.database import get_total_count, get_username_stats
+print(f'Total attacks: {get_total_count()}')
+for row in get_username_stats()[:5]:
+    print(f'  {row[\"username\"]}: {row[\"count\"]} hits')
+"
 ```
 
 ---
