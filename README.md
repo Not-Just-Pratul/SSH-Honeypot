@@ -247,6 +247,12 @@ The SOC dashboard provides real-time monitoring of all captured attack data:
 
   <img src="screenshots/dashboard-stats.png" alt="Statistics Tab" width="700"/>
   <p><em>Statistics — top attackers, peak hours, unique counts</em></p>
+
+  <img src="screenshots/Charts.png" alt="Charts & Visualizations" width="700"/>
+  <p><em>Charts — hourly trends, top usernames, country distribution, auth vectors</em></p>
+
+  <img src="screenshots/Charts 2.png" alt="Additional Charts" width="700"/>
+  <p><em>Charts — IP bar, ASN breakdown, heatmap, and attack patterns</em></p>
 </div>
 
 ---
