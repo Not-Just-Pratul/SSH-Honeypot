@@ -27,3 +27,5 @@ build/
 htmlcov/
 coverage/
 *.mmdb
+GeoIP.conf
+.env

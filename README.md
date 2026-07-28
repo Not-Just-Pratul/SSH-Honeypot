@@ -215,6 +215,21 @@ ssh-honeypot [mode] [options]
 | `--dashboard-port <port>` | Override dashboard port |
 | `--log-level <LEVEL>` | Set verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
 
+### Demo Mode
+
+Show live data streaming into the dashboard:
+
+```bash
+# Terminal 1: Start the honeypot stack
+python -m ssh_honeypot all
+
+# Terminal 2: Feed new attacks every 5 seconds
+python scripts/continuous_feed.py --interval 5
+```
+
+The dashboard at `http://localhost:8501` will show attacks appearing
+in real-time from IPs across 20+ countries.
+
 ---
 
 ## 📊 Dashboard
