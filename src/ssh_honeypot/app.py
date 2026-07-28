@@ -63,9 +63,14 @@ def start_dashboard() -> subprocess.Popen:
     runner_path = os.path.join(project_root, "dashboard_runner.py")
 
     if not os.path.isfile(runner_path):
-        # Fallback: running as installed package — find the module file
-        import ssh_honeypot.dashboard as dash_mod
-        runner_path = os.path.abspath(dash_mod.__file__)
+        # Fallback: Docker container layout
+        docker_path = "/app/dashboard_runner.py"
+        if os.path.isfile(docker_path):
+            runner_path = docker_path
+        else:
+            # Fallback: running as installed package — find the module file
+            import ssh_honeypot.dashboard as dash_mod
+            runner_path = os.path.abspath(dash_mod.__file__)
 
     cmd = [
         sys.executable,
