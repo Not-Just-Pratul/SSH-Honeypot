@@ -8,11 +8,11 @@ import logging
 import os
 import threading
 from logging.handlers import RotatingFileHandler
-from typing import Any, Dict
+from typing import Any
 
+from ssh_honeypot.config import config
 from ssh_honeypot.database import insert_attack
 from ssh_honeypot.geo import lookup_ip
-from ssh_honeypot.config import config
 
 
 def setup_logging(
@@ -85,7 +85,7 @@ def sanitize_string(value: str) -> str:
     return sanitized
 
 
-def record_attack(event: Dict[str, Any]) -> None:
+def record_attack(event: dict[str, Any]) -> None:
     """Record an attack attempt to the database and CSV.
 
     Enriches the IP address with geolocation data before
@@ -99,7 +99,7 @@ def record_attack(event: Dict[str, Any]) -> None:
     """
     try:
         enriched = lookup_ip(event.get("ip", ""))
-        record: Dict[str, Any] = {
+        record: dict[str, Any] = {
             "timestamp": event.get("timestamp", ""),
             "ip": sanitize_string(event.get("ip", "")),
             "country": enriched.get("country", "Unknown"),
@@ -131,7 +131,7 @@ def record_attack(event: Dict[str, Any]) -> None:
         honeypot_logger.error("Failed to record attack event: %s", exc)
 
 
-def _send_alerts_async(record: Dict[str, Any]) -> None:
+def _send_alerts_async(record: dict[str, Any]) -> None:
     """Send alert notifications in a background thread.
 
     Dispatches to all configured alert channels.
@@ -144,7 +144,7 @@ def _send_alerts_async(record: Dict[str, Any]) -> None:
     thread.start()
 
 
-def _send_all_alerts(record: Dict[str, Any]) -> None:
+def _send_all_alerts(record: dict[str, Any]) -> None:
     """Send alerts through all configured channels.
 
     Args:
@@ -160,7 +160,7 @@ def _send_all_alerts(record: Dict[str, Any]) -> None:
         _send_slack_alert(record, config.alerts.slack_webhook_url)
 
 
-def _send_telegram_alert(record: Dict[str, Any], token: str, chat_id: str) -> None:
+def _send_telegram_alert(record: dict[str, Any], token: str, chat_id: str) -> None:
     """Send a Telegram notification for a new attack record.
 
     Args:
@@ -194,7 +194,7 @@ def _send_telegram_alert(record: Dict[str, Any], token: str, chat_id: str) -> No
         honeypot_logger.error("Telegram alert failed: %s", exc)
 
 
-def _send_discord_alert(record: Dict[str, Any], webhook_url: str) -> None:
+def _send_discord_alert(record: dict[str, Any], webhook_url: str) -> None:
     """Send a Discord notification for a new attack record.
 
     Args:
@@ -227,7 +227,7 @@ def _send_discord_alert(record: Dict[str, Any], webhook_url: str) -> None:
         honeypot_logger.error("Discord alert failed: %s", exc)
 
 
-def _send_slack_alert(record: Dict[str, Any], webhook_url: str) -> None:
+def _send_slack_alert(record: dict[str, Any], webhook_url: str) -> None:
     """Send a Slack notification for a new attack record.
 
     Uses Slack's block kit formatting.

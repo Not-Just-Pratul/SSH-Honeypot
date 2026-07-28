@@ -6,10 +6,6 @@ from unittest.mock import patch
 import pytest
 
 from ssh_honeypot.config import (
-    _env_bool,
-    _env_float,
-    _env_int,
-    _env_str,
     AlertConfig,
     APIConfig,
     Config,
@@ -18,6 +14,10 @@ from ssh_honeypot.config import (
     GeoConfig,
     HoneypotConfig,
     ThreatIntelConfig,
+    _env_bool,
+    _env_float,
+    _env_int,
+    _env_str,
     config,
 )
 

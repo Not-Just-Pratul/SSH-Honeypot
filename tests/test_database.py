@@ -1,24 +1,16 @@
 """Tests for ssh_honeypot.database module."""
 
-import csv
 import os
-
-import pytest
 
 from ssh_honeypot.database import (
     _clean_string,
-    _ensure_schema,
     filter_logs,
     get_all_logs,
-    get_asn_stats,
     get_country_stats,
     get_db_connection,
-    get_daily_stats,
-    get_hourly_stats,
     get_ip_stats,
     get_latest,
     get_total_count,
-    get_today_count,
     get_unique_countries,
     get_unique_ips,
     get_username_stats,

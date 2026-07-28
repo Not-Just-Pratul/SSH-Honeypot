@@ -6,7 +6,6 @@ for the SSH Honeypot + Live Threat Intelligence Dashboard.
 
 import os
 from dataclasses import dataclass, field
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -59,7 +58,9 @@ class HoneypotConfig:
     )
     reject_password: bool = field(default_factory=lambda: _env_bool("HONEYPOT_REJECT_PASSWORD", True))
     reject_public_key: bool = field(default_factory=lambda: _env_bool("HONEYPOT_REJECT_PUBLIC_KEY", True))
-    reject_keyboard_interactive: bool = field(default_factory=lambda: _env_bool("HONEYPOT_REJECT_KEYBOARD_INTERACTIVE", True))
+    reject_keyboard_interactive: bool = field(
+        default_factory=lambda: _env_bool("HONEYPOT_REJECT_KEYBOARD_INTERACTIVE", True)
+    )
 
 
 @dataclass
@@ -98,8 +99,8 @@ def _env_float(name: str, default: float) -> float:
 class GeoConfig:
     """GeoIP enrichment configuration."""
 
-    geoip_city_db: Optional[str] = field(default_factory=lambda: os.environ.get("GEOIP_CITY_DB") or None)
-    geoip_asn_db: Optional[str] = field(default_factory=lambda: os.environ.get("GEOIP_ASN_DB") or None)
+    geoip_city_db: str | None = field(default_factory=lambda: os.environ.get("GEOIP_CITY_DB") or None)
+    geoip_asn_db: str | None = field(default_factory=lambda: os.environ.get("GEOIP_ASN_DB") or None)
     default_country: str = field(default_factory=lambda: _env_str("GEOIP_DEFAULT_COUNTRY", "Unknown"))
     default_city: str = field(default_factory=lambda: _env_str("GEOIP_DEFAULT_CITY", "Unknown"))
     default_lat: float = field(default_factory=lambda: _env_float("GEOIP_DEFAULT_LAT", 0.0))

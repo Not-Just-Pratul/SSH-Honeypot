@@ -1,12 +1,9 @@
 """Tests for ssh_honeypot.api_server module."""
 
-import json
 import time
 from unittest.mock import patch
 
-import pytest
-
-from ssh_honeypot.api_server import HoneypotAPIHandler, _generate_jwt, _verify_jwt
+from ssh_honeypot.api_server import _generate_jwt, _verify_jwt
 
 
 class TestJWTHelpers:
@@ -63,15 +60,17 @@ class TestJWTHelpers:
 class TestAPIHandler:
     """Test the API handler logic."""
 
-    sample_attacks = [
+    SAMPLE_ATTACKS = (
         {"id": 1, "ip": "1.1.1.1", "username": "root", "timestamp": "2026-01-15T12:00:00"},
         {"id": 2, "ip": "2.2.2.2", "username": "admin", "timestamp": "2026-01-15T12:05:00"},
-    ]
+    )
 
     def test_attacks_endpoint_mock(self):
         """Verify get_all_logs is callable and returns expected data."""
+        import os
+        import tempfile
+
         from ssh_honeypot.database import get_all_logs
-        import os, tempfile
 
         # Use a temp in-memory test to validate the function exists and works
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
@@ -88,7 +87,7 @@ class TestAPIHandler:
     @patch("ssh_honeypot.api_server.get_latest")
     def test_latest_endpoint(self, mock_get_latest):
         """GET /api/attacks/latest should return latest N logs."""
-        mock_get_latest.return_value = self.sample_attacks[:1]
+        mock_get_latest.return_value = list(self.SAMPLE_ATTACKS[:1])
         result = mock_get_latest(limit=1)
         assert len(result) == 1
 

@@ -1,8 +1,6 @@
 """Tests for ssh_honeypot.logger module."""
 
-from unittest.mock import patch
 
-import pytest
 
 from ssh_honeypot.logger import sanitize_string
 

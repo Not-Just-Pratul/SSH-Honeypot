@@ -5,9 +5,9 @@ ASN, and organization data using MaxMind GeoLite2 and optional
 threat intelligence APIs.
 """
 
+import contextlib
 import logging
 import os
-from typing import Dict, Optional
 
 from ssh_honeypot.config import GeoConfig, config
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class GeoEnricher:
     """IP geolocation and ASN enrichment engine."""
 
-    def __init__(self, geo_config: Optional[GeoConfig] = None) -> None:
+    def __init__(self, geo_config: GeoConfig | None = None) -> None:
         self._cfg = geo_config or config.geo
         self._geoip_db = None
         self._asn_db = None
@@ -38,7 +38,7 @@ class GeoEnricher:
         except Exception as exc:
             logger.error("Failed to load GeoIP database: %s", exc)
 
-    def enrich(self, ip: str) -> Dict[str, object]:
+    def enrich(self, ip: str) -> dict[str, object]:
         """Enrich a single IP address with geolocation and ASN data.
 
         Returns a dict with keys: country, city, latitude, longitude, asn, org.
@@ -48,9 +48,9 @@ class GeoEnricher:
 
         return self._lookup_geoip(ip)
 
-    def _lookup_geoip(self, ip: str) -> Dict[str, object]:
+    def _lookup_geoip(self, ip: str) -> dict[str, object]:
         """Perform GeoIP lookup using loaded databases."""
-        data: Dict[str, object] = self._default_result()
+        data: dict[str, object] = self._default_result()
 
         if self._geoip_db is not None:
             try:
@@ -65,14 +65,16 @@ class GeoEnricher:
         if self._asn_db is not None:
             try:
                 response = self._asn_db.asn(ip)
-                data["asn"] = str(response.autonomous_system_number) if response.autonomous_system_number else self._cfg.default_asn
+                data["asn"] = str(
+                    response.autonomous_system_number
+                ) if response.autonomous_system_number else self._cfg.default_asn
                 data["org"] = response.autonomous_system_organization or self._cfg.default_org
             except Exception as exc:
                 logger.debug("GeoIP ASN lookup failed for %s: %s", ip, exc)
 
         return data
 
-    def lookup_reputation(self, ip: str) -> Dict[str, object]:
+    def lookup_reputation(self, ip: str) -> dict[str, object]:
         """Look up IP reputation from AbuseIPDB if API key is configured.
 
         Returns a dict with risk_score, confidence, and is_whitelisted.
@@ -106,7 +108,7 @@ class GeoEnricher:
             logger.debug("AbuseIPDB lookup failed for %s: %s", ip, exc)
             return {}
 
-    def _default_result(self) -> Dict[str, object]:
+    def _default_result(self) -> dict[str, object]:
         """Return a default (unknown) enrichment result."""
         return {
             "country": self._cfg.default_country,
@@ -120,21 +122,17 @@ class GeoEnricher:
     def close(self) -> None:
         """Close GeoIP database connections."""
         if self._geoip_db is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._geoip_db.close()
-            except Exception:
-                pass
         if self._asn_db is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._asn_db.close()
-            except Exception:
-                pass
 
     def __del__(self) -> None:
         self.close()
 
 
-_enricher_instance: Optional[GeoEnricher] = None
+_enricher_instance: GeoEnricher | None = None
 
 
 def get_enricher() -> GeoEnricher:
@@ -145,7 +143,7 @@ def get_enricher() -> GeoEnricher:
     return _enricher_instance
 
 
-def lookup_ip(ip: str) -> Dict[str, object]:
+def lookup_ip(ip: str) -> dict[str, object]:
     """Convenience function: enrich a single IP address.
 
     Args:
@@ -158,7 +156,7 @@ def lookup_ip(ip: str) -> Dict[str, object]:
     return enricher.enrich(ip)
 
 
-def bulk_lookup(ips: list[str]) -> Dict[str, Dict[str, object]]:
+def bulk_lookup(ips: list[str]) -> dict[str, dict[str, object]]:
     """Enrich multiple IP addresses in a single call.
 
     Args:
@@ -168,7 +166,7 @@ def bulk_lookup(ips: list[str]) -> Dict[str, Dict[str, object]]:
         Dict mapping IP to enrichment result. Failed lookups return defaults.
     """
     enricher = get_enricher()
-    results: Dict[str, Dict[str, object]] = {}
+    results: dict[str, dict[str, object]] = {}
     for ip in ips:
         try:
             results[ip] = enricher.enrich(ip)

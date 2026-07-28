@@ -5,37 +5,29 @@ with attack statistics, charts, geolocation map, live feed, filtering
 capabilities, and data export functionality.
 """
 
-import json as _json
-import logging
 import os
 import re
+
+import folium
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 from streamlit_folium import st_folium
 
-import folium
+from ssh_honeypot.config import config
 from ssh_honeypot.database import (
-    filter_logs,
-    get_all_logs,
-    get_country_stats,
-    get_daily_stats,
-    get_hourly_stats,
-    get_ip_stats,
-    get_latest,
-    get_unique_countries,
-    get_unique_ips,
-    get_username_stats,
-    get_asn_stats,
-    get_total_count,
-    get_today_count,
     export_csv,
     export_excel,
     export_json,
-    search_logs,
+    get_all_logs,
+    get_asn_stats,
+    get_country_stats,
+    get_today_count,
+    get_total_count,
+    get_unique_countries,
+    get_unique_ips,
+    get_username_stats,
 )
-from ssh_honeypot.config import config
-from ssh_honeypot.geo import bulk_lookup
 
 COLORS = {
     "dark": {
@@ -293,7 +285,7 @@ def _apply_design(theme: str = "dark") -> None:
 def _render_header(theme: str) -> None:
     """Render the dashboard page header."""
     st.markdown(
-        f"""
+        """
         <div class="page-header">
             <h1>🛡️ SSH Honeypot SOC</h1>
             <p>Real-time threat intelligence &amp; attack monitoring</p>
@@ -674,7 +666,7 @@ def _render_filters(df: pd.DataFrame) -> pd.DataFrame:
             unknown_country = len(df[df["country"] == "Unknown"]) if "country" in df.columns else 0
             country_options = all_countries
             if unknown_country > 0:
-                country_options = ["Unknown (no GeoIP)"] + all_countries
+                country_options = ["Unknown (no GeoIP)", *all_countries]
             st.multiselect("Country", country_options, key="country_filter",
                            help=f"Unknown: {unknown_country} records (install GeoIP to resolve)" if unknown_country > 0 else "Filter by country")
         with cols[1]:
@@ -763,7 +755,7 @@ def _render_stats_tab(df: pd.DataFrame) -> None:
     with col_a:
         # Hourly timeline
         if "timestamp" in df.columns:
-            st.markdown(f'<div class="stat-card"><div class="stat-label">Hourly Attack Timeline</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="stat-card"><div class="stat-label">Hourly Attack Timeline</div></div>', unsafe_allow_html=True)
             ts = pd.to_datetime(df["timestamp"])
             ts_group = ts.dt.floor("h").value_counts().sort_index()
             hourly_df = pd.DataFrame({
@@ -777,17 +769,17 @@ def _render_stats_tab(df: pd.DataFrame) -> None:
                 height=220,
             )
             fig.update_layout(
-                margin=dict(l=10, r=10, t=10, b=30),
+                margin={"l": 10, "r": 10, "t": 10, "b": 30},
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                xaxis=dict(showgrid=False, color=c["body"], tickformat="%H:%M"),
-                yaxis=dict(showgrid=True, gridcolor=c["hairline"], color=c["body"]),
+                xaxis={"showgrid": False, "color": c["body"], "tickformat": "%H:%M"},
+                yaxis={"showgrid": True, "gridcolor": c["hairline"], "color": c["body"]},
                 hovermode="x",
             )
             st.plotly_chart(fig, width="stretch", use_container_width=True)
 
         # Auth method breakdown
         if "auth_method" in df.columns:
-            st.markdown(f'<div class="stat-card"><div class="stat-label">Auth Method Breakdown</div></div>', unsafe_allow_html=True)
+            st.markdown('<div class="stat-card"><div class="stat-label">Auth Method Breakdown</div></div>', unsafe_allow_html=True)
             auth_counts = df["auth_method"].value_counts().reset_index()
             auth_counts.columns = ["method", "count"]
             fig2 = px.pie(
@@ -796,7 +788,7 @@ def _render_stats_tab(df: pd.DataFrame) -> None:
                 height=260,
             )
             fig2.update_layout(
-                margin=dict(l=10, r=10, t=10, b=10),
+                margin={"l": 10, "r": 10, "t": 10, "b": 10},
                 paper_bgcolor="rgba(0,0,0,0)",
                 showlegend=False,
             )
@@ -805,7 +797,7 @@ def _render_stats_tab(df: pd.DataFrame) -> None:
 
     with col_b:
         # Top attackers table
-        st.markdown(f'<div class="stat-card"><div class="stat-label">Top 10 Attacking IPs</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="stat-card"><div class="stat-label">Top 10 Attacking IPs</div></div>', unsafe_allow_html=True)
         top_ips = df["ip"].value_counts().head(10).reset_index()
         top_ips.columns = ["IP", "Attacks"]
         top_ips["Rank"] = range(1, len(top_ips) + 1)
@@ -815,7 +807,7 @@ def _render_stats_tab(df: pd.DataFrame) -> None:
         )
 
         # Most targeted usernames
-        st.markdown(f'<div class="stat-card"><div class="stat-label">Most Targeted Usernames</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="stat-card"><div class="stat-label">Most Targeted Usernames</div></div>', unsafe_allow_html=True)
         top_users = df["username"].value_counts().head(10).reset_index()
         top_users.columns = ["Username", "Attacks"]
         top_users["Rank"] = range(1, len(top_users) + 1)

@@ -161,12 +161,13 @@ class TestHostKeyLoading:
 
     def test_host_key_file_not_found(self):
         """Missing host key should raise FileNotFoundError."""
-        from ssh_honeypot.honeypot import _load_host_key, _cached_host_key
-
         # Reset the cache
         import ssh_honeypot.honeypot as h
+        from ssh_honeypot.honeypot import _load_host_key
         h._cached_host_key = None
 
-        with patch("ssh_honeypot.config.config.honeypot.host_key_path", "/nonexistent/key"):
-            with pytest.raises(FileNotFoundError, match="Host key not found"):
-                _load_host_key()
+        with (
+            patch("ssh_honeypot.config.config.honeypot.host_key_path", "/nonexistent/key"),
+            pytest.raises(FileNotFoundError, match="Host key not found"),
+        ):
+            _load_host_key()

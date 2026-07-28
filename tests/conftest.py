@@ -1,8 +1,8 @@
 """Shared test fixtures for SSH Honeypot test suite."""
 
 import os
-import tempfile
 import shutil
+import tempfile
 
 import pytest
 

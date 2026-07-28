@@ -11,18 +11,17 @@ import logging
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-from typing import Dict, Optional
 from urllib.parse import parse_qs, urlparse
 
+from ssh_honeypot.config import config
 from ssh_honeypot.database import (
     get_all_logs,
     get_latest,
-    get_total_count,
     get_today_count,
+    get_total_count,
     get_unique_countries,
     get_unique_ips,
 )
-from ssh_honeypot.config import config
 
 MAX_REQUEST_SIZE = 1024 * 1024
 
@@ -56,7 +55,7 @@ def _generate_jwt(payload: dict, secret: str) -> str:
     return f"{b64_header}.{b64_body}.{b64_sig}"
 
 
-def _verify_jwt(token: str, secret: str) -> Optional[dict]:
+def _verify_jwt(token: str, secret: str) -> dict | None:
     """Verify a JWT token and return its payload if valid.
 
     Args:

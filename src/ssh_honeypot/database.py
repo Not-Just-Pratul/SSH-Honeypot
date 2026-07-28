@@ -10,14 +10,14 @@ import logging
 import os
 import sqlite3
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ssh_honeypot.config import DatabaseConfig, config
+from ssh_honeypot.config import config
 
 logger = logging.getLogger(__name__)
 
 
-def get_db_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
+def get_db_connection(db_path: str | None = None) -> sqlite3.Connection:
     """Create and return a SQLite database connection.
 
     Args:
@@ -84,7 +84,7 @@ def _ensure_schema(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
-def insert_attack(data: Dict[str, Any], db_path: Optional[str] = None) -> int:
+def insert_attack(data: dict[str, Any], db_path: str | None = None) -> int:
     """Insert an attack record into the database and CSV file.
 
     Args:
@@ -136,7 +136,7 @@ def insert_attack(data: Dict[str, Any], db_path: Optional[str] = None) -> int:
     return row_id
 
 
-def _append_csv(data: Dict[str, Any], db_path: Optional[str] = None) -> None:
+def _append_csv(data: dict[str, Any], db_path: str | None = None) -> None:
     """Append a single record to the CSV log file.
 
     Creates the file with headers if it does not exist.
@@ -158,7 +158,7 @@ def _append_csv(data: Dict[str, Any], db_path: Optional[str] = None) -> None:
         writer.writerow(row)
 
 
-def get_all_logs(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_all_logs(db_path: str | None = None) -> list[dict[str, Any]]:
     """Retrieve all attack log records from the database.
 
     Args:
@@ -177,7 +177,7 @@ def get_all_logs(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
         conn.close()
 
 
-def get_latest(limit: int = 50, db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_latest(limit: int = 50, db_path: str | None = None) -> list[dict[str, Any]]:
     """Retrieve the most recent attack log records.
 
     Args:
@@ -197,7 +197,7 @@ def get_latest(limit: int = 50, db_path: Optional[str] = None) -> List[Dict[str,
         conn.close()
 
 
-def get_country_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_country_stats(db_path: str | None = None) -> list[dict[str, Any]]:
     """Get aggregated statistics per country.
 
     Returns:
@@ -220,7 +220,7 @@ def get_country_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
         conn.close()
 
 
-def get_username_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_username_stats(db_path: str | None = None) -> list[dict[str, Any]]:
     """Get aggregated statistics per username.
 
     Returns:
@@ -244,7 +244,7 @@ def get_username_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
         conn.close()
 
 
-def get_ip_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_ip_stats(db_path: str | None = None) -> list[dict[str, Any]]:
     """Get aggregated statistics per IP address.
 
     Returns:
@@ -268,7 +268,7 @@ def get_ip_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
         conn.close()
 
 
-def get_hourly_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_hourly_stats(db_path: str | None = None) -> list[dict[str, Any]]:
     """Get attack counts grouped by hour.
 
     Returns:
@@ -290,7 +290,7 @@ def get_hourly_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
         conn.close()
 
 
-def get_daily_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_daily_stats(db_path: str | None = None) -> list[dict[str, Any]]:
     """Get attack counts grouped by day.
 
     Returns:
@@ -312,7 +312,7 @@ def get_daily_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
         conn.close()
 
 
-def get_asn_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_asn_stats(db_path: str | None = None) -> list[dict[str, Any]]:
     """Get attack counts grouped by ASN.
 
     Returns:
@@ -336,8 +336,8 @@ def get_asn_stats(db_path: Optional[str] = None) -> List[Dict[str, Any]]:
 
 def search_logs(
     query: str,
-    db_path: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    db_path: str | None = None,
+) -> list[dict[str, Any]]:
     """Search attack logs by username, country, IP, or ASN.
 
     Args:
@@ -368,14 +368,14 @@ def search_logs(
 
 
 def filter_logs(
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-    country: Optional[str] = None,
-    username: Optional[str] = None,
-    status: Optional[str] = None,
-    ip: Optional[str] = None,
-    db_path: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    start_date: str | None = None,
+    end_date: str | None = None,
+    country: str | None = None,
+    username: str | None = None,
+    status: str | None = None,
+    ip: str | None = None,
+    db_path: str | None = None,
+) -> list[dict[str, Any]]:
     """Filter attack logs by multiple criteria.
 
     Args:
@@ -393,7 +393,7 @@ def filter_logs(
     conn = get_db_connection(db_path)
     try:
         conditions = []
-        params: List[Any] = []
+        params: list[Any] = []
 
         if start_date:
             conditions.append("timestamp >= ?")
@@ -417,7 +417,7 @@ def filter_logs(
         where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
 
         cursor = conn.execute(
-            f"SELECT * FROM attack_logs {where_clause} ORDER BY timestamp DESC",
+            f"SELECT * FROM attack_logs {where_clause} ORDER BY timestamp DESC",  # noqa: S608
             params,
         )
         return [dict(row) for row in cursor.fetchall()]
@@ -426,9 +426,9 @@ def filter_logs(
 
 
 def export_csv(
-    data: Optional[List[Dict[str, Any]]] = None,
-    output_path: Optional[str] = None,
-    db_path: Optional[str] = None,
+    data: list[dict[str, Any]] | None = None,
+    output_path: str | None = None,
+    db_path: str | None = None,
 ) -> str:
     """Export attack logs to a CSV file.
 
@@ -460,9 +460,9 @@ def export_csv(
 
 
 def export_excel(
-    data: Optional[List[Dict[str, Any]]] = None,
-    output_path: Optional[str] = None,
-    db_path: Optional[str] = None,
+    data: list[dict[str, Any]] | None = None,
+    output_path: str | None = None,
+    db_path: str | None = None,
 ) -> str:
     """Export attack logs to an Excel (.xlsx) file.
 
@@ -493,9 +493,9 @@ def export_excel(
 
 
 def export_json(
-    data: Optional[List[Dict[str, Any]]] = None,
-    output_path: Optional[str] = None,
-    db_path: Optional[str] = None,
+    data: list[dict[str, Any]] | None = None,
+    output_path: str | None = None,
+    db_path: str | None = None,
 ) -> str:
     """Export attack logs to a JSON file.
 
@@ -520,7 +520,7 @@ def export_json(
     return path
 
 
-def get_total_count(db_path: Optional[str] = None) -> int:
+def get_total_count(db_path: str | None = None) -> int:
     """Get total number of attack log records."""
     conn = get_db_connection(db_path)
     try:
@@ -530,7 +530,7 @@ def get_total_count(db_path: Optional[str] = None) -> int:
         conn.close()
 
 
-def get_today_count(db_path: Optional[str] = None) -> int:
+def get_today_count(db_path: str | None = None) -> int:
     """Get number of attack log records from today."""
     conn = get_db_connection(db_path)
     try:
@@ -543,7 +543,7 @@ def get_today_count(db_path: Optional[str] = None) -> int:
         conn.close()
 
 
-def get_unique_ips(db_path: Optional[str] = None) -> int:
+def get_unique_ips(db_path: str | None = None) -> int:
     """Get count of unique source IP addresses."""
     conn = get_db_connection(db_path)
     try:
@@ -553,7 +553,7 @@ def get_unique_ips(db_path: Optional[str] = None) -> int:
         conn.close()
 
 
-def get_unique_countries(db_path: Optional[str] = None) -> int:
+def get_unique_countries(db_path: str | None = None) -> int:
     """Get count of unique countries."""
     conn = get_db_connection(db_path)
     try:

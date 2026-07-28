@@ -8,17 +8,17 @@ Includes brute-force detection and optional fail2Ban integration
 for automated attacker blocking.
 """
 
+import contextlib
 import logging
 import os
 import socket
 import subprocess
 import threading
-import traceback
 import time
+import traceback
 from collections import defaultdict
 from datetime import datetime, timezone
 from threading import RLock
-from typing import Dict, Optional
 
 import paramiko
 from paramiko.server import ServerInterface
@@ -30,7 +30,7 @@ from ssh_honeypot.logger import record_attack, sanitize_string
 logger = logging.getLogger("ssh_honeypot")
 
 
-_cached_host_key: Optional[paramiko.RSAKey] = None
+_cached_host_key: paramiko.RSAKey | None = None
 
 
 def _load_host_key() -> paramiko.RSAKey:
@@ -194,8 +194,8 @@ class BruteForceDetector:
         self.ban_duration = ban_duration
         self.fail2ban_enabled = fail2ban_enabled
         self.fail2ban_action = fail2ban_action
-        self._attempts: Dict[str, list] = defaultdict(list)
-        self._banned: Dict[str, float] = {}
+        self._attempts: dict[str, list] = defaultdict(list)
+        self._banned: dict[str, float] = {}
         self._lock = RLock()
 
     def record_attempt(self, ip: str) -> bool:
@@ -289,7 +289,7 @@ class BruteForceDetector:
             }
 
 
-_brute_force_detector: Optional[BruteForceDetector] = None
+_brute_force_detector: BruteForceDetector | None = None
 
 
 def get_brute_force_detector() -> BruteForceDetector:
@@ -339,7 +339,6 @@ def handle_client_connection(
         transport = Transport(client_sock)
         host_key = _load_host_key()
         transport.add_server_key(host_key)
-        server_version = config.honeypot.server_version
 
         server = HoneypotServer(client_ip, client_port)
         try:
@@ -376,7 +375,7 @@ def handle_client_connection(
         server.finalize_session()
         transport.close()
 
-    except socket.timeout:
+    except TimeoutError:
         logger.info(
             "Connection timed out with %s:%d", client_ip, client_port
         )
@@ -390,15 +389,13 @@ def handle_client_connection(
             tb,
         )
     finally:
-        try:
+        with contextlib.suppress(Exception):
             client_sock.close()
-        except Exception:
-            pass
 
 
 def start_honeypot(
-    host: Optional[str] = None,
-    port: Optional[str] = None,
+    host: str | None = None,
+    port: str | None = None,
 ) -> None:
     """Start the SSH honeypot server and listen for connections.
 
@@ -443,7 +440,7 @@ def start_honeypot(
                 )
                 client_thread.start()
 
-            except socket.timeout:
+            except TimeoutError:
                 continue
             except KeyboardInterrupt:
                 logger.info("Shutting down honeypot...")
