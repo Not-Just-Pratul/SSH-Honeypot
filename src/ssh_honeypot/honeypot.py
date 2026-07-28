@@ -17,6 +17,7 @@ import traceback
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
+from threading import RLock
 from typing import Dict, Optional
 
 import paramiko
@@ -195,7 +196,7 @@ class BruteForceDetector:
         self.fail2ban_action = fail2ban_action
         self._attempts: Dict[str, list] = defaultdict(list)
         self._banned: Dict[str, float] = {}
-        self._lock = threading.Lock()
+        self._lock = RLock()
 
     def record_attempt(self, ip: str) -> bool:
         """Record a failed attempt for an IP.

@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+  # ---------------------------------------------------------------------------
+  # SSH Honeypot + Dashboard + API (all-in-one mode)
+  # ---------------------------------------------------------------------------
+  honeypot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ssh-honeypot
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      # SSH Honeypot - bind to host port for external attacker capture
+      - "${HONEYPOT_PORT:-2222}:2222"
+      # SOC Dashboard - accessible from browser
+      - "${DASHBOARD_PORT:-8501}:8501"
+      # REST API - for external integrations
+      - "${API_PORT:-8502}:8502"
+    volumes:
+      # Persist attack logs across container restarts
+      - honeypot-logs:/app/logs
+      # Optionally mount GeoIP databases (read-only)
+      - ${GEOIP_CITY_DB:-/dev/null}:/app/data/GeoLite2-City.mmdb:ro
+      - ${GEOIP_ASN_DB:-/dev/null}:/app/data/GeoLite2-ASN.mmdb:ro
+    networks:
+      - honeypot-net
+    healthcheck:
+      test: >
+        python -c "import socket; s = socket.socket(); s.settimeout(3); s.connect(('127.0.0.1', 2222)); s.close()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+    security_opt:
+      - no-new-privileges:true
+
+  # ---------------------------------------------------------------------------
+  # Separate honeypot-only service (for high-traffic production use)
+  # ---------------------------------------------------------------------------
+  # To use: docker compose --profile production up honeypot-worker
+  honeypot-worker:
+    profiles:
+      - production
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ssh-honeypot-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["python", "-m", "ssh_honeypot", "honeypot"]
+    ports:
+      - "${HONEYPOT_PORT:-2222}:2222"
+    volumes:
+      - honeypot-logs-worker:/app/logs
+    networks:
+      - honeypot-net
+    security_opt:
+      - no-new-privileges:true
+
+# ---------------------------------------------------------------------------
+# Persistent volumes
+# ---------------------------------------------------------------------------
+volumes:
+  honeypot-logs:
+    driver: local
+  honeypot-logs-worker:
+    driver: local
+
+# ---------------------------------------------------------------------------
+# Network
+# ---------------------------------------------------------------------------
+networks:
+  honeypot-net:
+    driver: bridge

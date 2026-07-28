@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from ssh_honeypot.config import DatabaseConfig, config
@@ -105,7 +105,7 @@ def insert_attack(data: Dict[str, Any], db_path: Optional[str] = None) -> int:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                data.get("timestamp", datetime.utcnow().isoformat()),
+                data.get("timestamp", datetime.now(timezone.utc).isoformat()),
                 _clean_string(data.get("ip", "")),
                 _clean_string(data.get("country", "Unknown")),
                 _clean_string(data.get("city", "Unknown")),
@@ -534,7 +534,7 @@ def get_today_count(db_path: Optional[str] = None) -> int:
     """Get number of attack log records from today."""
     conn = get_db_connection(db_path)
     try:
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         cursor = conn.execute(
             "SELECT COUNT(*) FROM attack_logs WHERE timestamp >= ?", (today,)
         )
