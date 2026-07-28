@@ -24,7 +24,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir --no-build-isolation .
 
 # --- Stage 2: Runtime ---
@@ -47,6 +47,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy application source
 COPY src/ ./src/
 COPY app.py ./
+COPY dashboard_runner.py ./
 COPY pyproject.toml ./
 
 # Generate SSH host key
