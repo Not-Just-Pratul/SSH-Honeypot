@@ -42,8 +42,7 @@ def _load_host_key() -> paramiko.RSAKey:
     key_path = config.honeypot.host_key_path
     if not os.path.exists(key_path):
         raise FileNotFoundError(
-            f"Host key not found at {key_path}. "
-            "Generate one with: openssl genrsa -out keys/ssh_host_rsa_key 2048"
+            f"Host key not found at {key_path}. Generate one with: openssl genrsa -out keys/ssh_host_rsa_key 2048"
         )
     _cached_host_key = paramiko.RSAKey(filename=key_path)
     return _cached_host_key
@@ -56,9 +55,7 @@ class HoneypotServer(ServerInterface):
         self.client_ip = client_ip
         self.client_port = client_port
         self.event = threading.Event()
-        self.session_id = sanitize_string(
-            f"{client_ip}-{int(time.time())}"
-        )
+        self.session_id = sanitize_string(f"{client_ip}-{int(time.time())}")
         self.start_time = time.time()
         self.username_attempted = ""
         self.auth_method = "none"
@@ -66,9 +63,7 @@ class HoneypotServer(ServerInterface):
         self.protocol_version = ""
         self.attempt_count = 0
 
-    def check_channel_request(
-        self, kind: str, chanid: int
-    ) -> int:
+    def check_channel_request(self, kind: str, chanid: int) -> int:
         """Allow session channel requests."""
         if kind == "session":
             return paramiko.OPEN_SUCCEEDED
@@ -87,9 +82,7 @@ class HoneypotServer(ServerInterface):
         )
         return paramiko.AUTH_FAILED
 
-    def check_auth_password(
-        self, username: str, password: str
-    ) -> int:
+    def check_auth_password(self, username: str, password: str) -> int:
         """Reject password authentication attempts."""
         self.username_attempted = sanitize_string(username)
         self.auth_method = "password"
@@ -102,9 +95,7 @@ class HoneypotServer(ServerInterface):
         )
         return paramiko.AUTH_FAILED
 
-    def check_auth_publickey(
-        self, username: str, key: paramiko.pkey.PKey
-    ) -> int:
+    def check_auth_publickey(self, username: str, key: paramiko.pkey.PKey) -> int:
         """Reject public key authentication attempts."""
         self.username_attempted = sanitize_string(username)
         self.auth_method = "publickey"
@@ -117,9 +108,7 @@ class HoneypotServer(ServerInterface):
         )
         return paramiko.AUTH_FAILED
 
-    def check_auth_keyboard_interactive(
-        self, username: str, submethods: str
-    ) -> int:
+    def check_auth_keyboard_interactive(self, username: str, submethods: str) -> int:
         """Reject keyboard-interactive authentication attempts."""
         self.username_attempted = sanitize_string(username)
         self.auth_method = "keyboard-interactive"
@@ -140,21 +129,15 @@ class HoneypotServer(ServerInterface):
         """Deny shell access regardless of request."""
         return False
 
-    def check_channel_exec_request(
-        self, channel, command: bytes
-    ) -> bool:
+    def check_channel_exec_request(self, channel, command: bytes) -> bool:
         """Deny command execution requests."""
         return False
 
-    def check_channel_pty_request(
-        self, channel, term, width, height, pixelwidth, pixelheight, modes
-    ) -> bool:
+    def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes) -> bool:
         """Deny PTY allocation requests."""
         return False
 
-    def check_channel_window_adjust_request(
-        self, channel, bytes_to_add
-    ) -> bool:
+    def check_channel_window_adjust_request(self, channel, bytes_to_add) -> bool:
         """Accept window adjustment requests."""
         return True
 
@@ -207,16 +190,13 @@ class BruteForceDetector:
         with self._lock:
             self._attempts[ip].append(now)
             cutoff = now - self.window_seconds
-            self._attempts[ip] = [
-                t for t in self._attempts[ip] if t > cutoff
-            ]
+            self._attempts[ip] = [t for t in self._attempts[ip] if t > cutoff]
             count = len(self._attempts[ip])
 
             if count >= self.threshold and ip not in self._banned:
                 self._banned[ip] = now + self.ban_duration
                 logger.warning(
-                    "Brute-force detected from %s (%d attempts in %ds). "
-                    "Triggering %s.",
+                    "Brute-force detected from %s (%d attempts in %ds). Triggering %s.",
                     ip,
                     count,
                     self.window_seconds,
@@ -259,8 +239,7 @@ class BruteForceDetector:
             logger.info("fail2Ban issued ban for %s", ip)
         except FileNotFoundError:
             logger.info(
-                "fail2Ban-client not found. Install fail2Ban for "
-                "automated blocking of %s",
+                "fail2Ban-client not found. Install fail2Ban for automated blocking of %s",
                 ip,
             )
         except subprocess.TimeoutExpired:
@@ -272,11 +251,7 @@ class BruteForceDetector:
         """Return list of currently banned IPs."""
         now = time.time()
         with self._lock:
-            return [
-                ip
-                for ip, until in self._banned.items()
-                if until > now
-            ]
+            return [ip for ip, until in self._banned.items() if until > now]
 
     def get_stats(self) -> dict:
         """Return brute-force detection statistics."""
@@ -322,16 +297,12 @@ def handle_client_connection(
         server_sock: The listening server socket (for reference).
     """
     client_ip, client_port = client_addr
-    logger.info(
-        "New connection from %s:%d", client_ip, client_port
-    )
+    logger.info("New connection from %s:%d", client_ip, client_port)
 
     detector = get_brute_force_detector()
 
     if detector.is_banned(client_ip):
-        logger.warning(
-            "Blocked banned IP %s:%d", client_ip, client_port
-        )
+        logger.warning("Blocked banned IP %s:%d", client_ip, client_port)
         client_sock.close()
         return
 
@@ -344,9 +315,7 @@ def handle_client_connection(
         try:
             transport.start_server(server=server)
         except paramiko.SSHException:
-            logger.warning(
-                "SSH handshake failed with %s:%d", client_ip, client_port
-            )
+            logger.warning("SSH handshake failed with %s:%d", client_ip, client_port)
             detector.record_attempt(client_ip)
             transport.close()
             return
@@ -357,17 +326,13 @@ def handle_client_connection(
 
         channel = transport.accept(timeout=config.honeypot.connection_timeout)
         if channel is None:
-            logger.info(
-                "No channel opened by %s:%d, terminating", client_ip, client_port
-            )
+            logger.info("No channel opened by %s:%d, terminating", client_ip, client_port)
             detector.record_attempt(client_ip)
             server.finalize_session()
             transport.close()
             return
 
-        logger.info(
-            "Session established with %s:%d, denying access", client_ip, client_port
-        )
+        logger.info("Session established with %s:%d, denying access", client_ip, client_port)
 
         detector.record_attempt(client_ip)
 
@@ -376,9 +341,7 @@ def handle_client_connection(
         transport.close()
 
     except TimeoutError:
-        logger.info(
-            "Connection timed out with %s:%d", client_ip, client_port
-        )
+        logger.info("Connection timed out with %s:%d", client_ip, client_port)
     except Exception as exc:
         tb = traceback.format_exc()
         logger.error(
@@ -413,25 +376,15 @@ def start_honeypot(
     try:
         server_sock.bind((bind_host, bind_port))
         server_sock.listen(config.honeypot.max_connections)
-        logger.info(
-            "SSH Honeypot listening on %s:%d", bind_host, bind_port
-        )
-        logger.info(
-            "Banner: %s", config.honeypot.banner
-        )
-        logger.info(
-            "Server version: %s", config.honeypot.server_version
-        )
-        logger.warning(
-            "This honeypot is for defensive security research only."
-        )
+        logger.info("SSH Honeypot listening on %s:%d", bind_host, bind_port)
+        logger.info("Banner: %s", config.honeypot.banner)
+        logger.info("Server version: %s", config.honeypot.server_version)
+        logger.warning("This honeypot is for defensive security research only.")
 
         while True:
             try:
                 client_sock, client_addr = server_sock.accept()
-                client_sock.settimeout(
-                    config.honeypot.connection_timeout
-                )
+                client_sock.settimeout(config.honeypot.connection_timeout)
 
                 client_thread = threading.Thread(
                     target=handle_client_connection,
@@ -449,9 +402,7 @@ def start_honeypot(
                 break
 
     except OSError as exc:
-        logger.error(
-            "Failed to bind to %s:%d: %s", bind_host, bind_port, exc
-        )
+        logger.error("Failed to bind to %s:%d: %s", bind_host, bind_port, exc)
         raise
     finally:
         server_sock.close()

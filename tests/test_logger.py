@@ -1,7 +1,5 @@
 """Tests for ssh_honeypot.logger module."""
 
-
-
 from ssh_honeypot.logger import sanitize_string
 
 

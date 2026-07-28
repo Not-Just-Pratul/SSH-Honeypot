@@ -77,6 +77,7 @@ class TestAPIHandler:
             db_path = f.name
         try:
             from ssh_honeypot.database import insert_attack
+
             insert_attack({"ip": "1.1.1.1", "username": "root"}, db_path)
             results = get_all_logs(db_path)
             assert len(results) == 1
@@ -95,9 +96,7 @@ class TestAPIHandler:
     @patch("ssh_honeypot.api_server.get_today_count")
     @patch("ssh_honeypot.api_server.get_unique_ips")
     @patch("ssh_honeypot.api_server.get_unique_countries")
-    def test_stats_endpoint(
-        self, mock_countries, mock_ips, mock_today, mock_total
-    ):
+    def test_stats_endpoint(self, mock_countries, mock_ips, mock_today, mock_total):
         """GET /api/stats should return aggregate statistics."""
         mock_total.return_value = 100
         mock_today.return_value = 10

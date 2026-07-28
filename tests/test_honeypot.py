@@ -27,6 +27,7 @@ class TestHoneypotServer:
         """check_auth_password should always return AUTH_FAILED."""
         server = HoneypotServer("1.2.3.4", 22)
         import paramiko
+
         result = server.check_auth_password("admin", "password123")
         assert result == paramiko.AUTH_FAILED
         assert server.username_attempted == "admin"
@@ -36,6 +37,7 @@ class TestHoneypotServer:
         """check_auth_publickey should always return AUTH_FAILED."""
         server = HoneypotServer("1.2.3.4", 22)
         import paramiko
+
         result = server.check_auth_publickey("testuser", MagicMock())
         assert result == paramiko.AUTH_FAILED
         assert server.attempt_count == 1
@@ -44,6 +46,7 @@ class TestHoneypotServer:
         """check_auth_none should always return AUTH_FAILED."""
         server = HoneypotServer("1.2.3.4", 22)
         import paramiko
+
         result = server.check_auth_none("anonymous")
         assert result == paramiko.AUTH_FAILED
         assert server.attempt_count == 1
@@ -164,6 +167,7 @@ class TestHostKeyLoading:
         # Reset the cache
         import ssh_honeypot.honeypot as h
         from ssh_honeypot.honeypot import _load_host_key
+
         h._cached_host_key = None
 
         with (

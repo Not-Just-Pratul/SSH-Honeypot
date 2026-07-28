@@ -35,9 +35,7 @@ def start_honeypot_server() -> None:
         config.honeypot.host,
         config.honeypot.port,
     )
-    logger.info(
-        "WARNING: This honeypot is for defensive security research only."
-    )
+    logger.info("WARNING: This honeypot is for defensive security research only.")
     start_honeypot(host=config.honeypot.host, port=config.honeypot.port)
 
 
@@ -70,6 +68,7 @@ def start_dashboard() -> subprocess.Popen:
         else:
             # Fallback: running as installed package — find the module file
             import ssh_honeypot.dashboard as dash_mod
+
             runner_path = os.path.abspath(dash_mod.__file__)
 
     cmd = [

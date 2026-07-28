@@ -27,6 +27,7 @@ class GeoEnricher:
         """Initialize GeoIP database connections."""
         try:
             import geoip2.database
+
             if self._cfg.geoip_city_db and os.path.isfile(self._cfg.geoip_city_db):
                 self._geoip_db = geoip2.database.Reader(self._cfg.geoip_city_db)
                 logger.info("GeoLite2 city database loaded from %s", self._cfg.geoip_city_db)
@@ -65,9 +66,11 @@ class GeoEnricher:
         if self._asn_db is not None:
             try:
                 response = self._asn_db.asn(ip)
-                data["asn"] = str(
-                    response.autonomous_system_number
-                ) if response.autonomous_system_number else self._cfg.default_asn
+                data["asn"] = (
+                    str(response.autonomous_system_number)
+                    if response.autonomous_system_number
+                    else self._cfg.default_asn
+                )
                 data["org"] = response.autonomous_system_organization or self._cfg.default_org
             except Exception as exc:
                 logger.debug("GeoIP ASN lookup failed for %s: %s", ip, exc)
@@ -86,6 +89,7 @@ class GeoEnricher:
 
         try:
             import requests
+
             resp = requests.get(
                 f"{self._cfg.abuseipdb_base_url}/check",
                 params={

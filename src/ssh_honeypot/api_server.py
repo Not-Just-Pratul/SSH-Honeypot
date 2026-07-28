@@ -100,6 +100,7 @@ def _verify_jwt(token: str, secret: str) -> dict | None:
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in separate threads."""
+
     daemon_threads = True
     request_queue_size = 128
 

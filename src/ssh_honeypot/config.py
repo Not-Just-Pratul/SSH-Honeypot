@@ -108,7 +108,9 @@ class GeoConfig:
     default_asn: str = field(default_factory=lambda: _env_str("GEOIP_DEFAULT_ASN", "Unknown"))
     default_org: str = field(default_factory=lambda: _env_str("GEOIP_DEFAULT_ORG", "Unknown"))
     abuseipdb_api_key: str = field(default_factory=lambda: _env_str("ABUSEIPDB_API_KEY", ""))
-    abuseipdb_base_url: str = field(default_factory=lambda: _env_str("ABUSEIPDB_BASE_URL", "https://api.abuseipdb.com/api/v2"))
+    abuseipdb_base_url: str = field(
+        default_factory=lambda: _env_str("ABUSEIPDB_BASE_URL", "https://api.abuseipdb.com/api/v2")
+    )
 
 
 @dataclass
@@ -116,11 +118,17 @@ class ThreatIntelConfig:
     """Threat intelligence enrichment configuration."""
 
     abuseipdb_api_key: str = field(default_factory=lambda: _env_str("ABUSEIPDB_API_KEY", ""))
-    abuseipdb_base_url: str = field(default_factory=lambda: _env_str("ABUSEIPDB_BASE_URL", "https://api.abuseipdb.com/api/v2"))
+    abuseipdb_base_url: str = field(
+        default_factory=lambda: _env_str("ABUSEIPDB_BASE_URL", "https://api.abuseipdb.com/api/v2")
+    )
     virustotal_api_key: str = field(default_factory=lambda: _env_str("VIRUSTOTAL_API_KEY", ""))
-    virustotal_base_url: str = field(default_factory=lambda: _env_str("VIRUSTOTAL_BASE_URL", "https://www.virustotal.com/api/v3"))
+    virustotal_base_url: str = field(
+        default_factory=lambda: _env_str("VIRUSTOTAL_BASE_URL", "https://www.virustotal.com/api/v3")
+    )
     greynoise_api_key: str = field(default_factory=lambda: _env_str("GREYNOISE_API_KEY", ""))
-    greynoise_base_url: str = field(default_factory=lambda: _env_str("GREYNOISE_BASE_URL", "https://api.greynoise.io/v3"))
+    greynoise_base_url: str = field(
+        default_factory=lambda: _env_str("GREYNOISE_BASE_URL", "https://api.greynoise.io/v3")
+    )
     shodan_api_key: str = field(default_factory=lambda: _env_str("SHODAN_API_KEY", ""))
     shodan_base_url: str = field(default_factory=lambda: _env_str("SHODAN_BASE_URL", "https://api.shodan.io"))
     enable_threat_score: bool = field(default_factory=lambda: _env_bool("ENABLE_THREAT_SCORE", False))

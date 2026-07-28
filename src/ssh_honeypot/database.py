@@ -146,8 +146,18 @@ def _append_csv(data: dict[str, Any], db_path: str | None = None) -> None:
     file_exists = os.path.isfile(csv_path)
 
     fieldnames = [
-        "timestamp", "ip", "country", "city", "username", "auth_method",
-        "client_version", "attempts", "status", "latitude", "longitude", "asn",
+        "timestamp",
+        "ip",
+        "country",
+        "city",
+        "username",
+        "auth_method",
+        "client_version",
+        "attempts",
+        "status",
+        "latitude",
+        "longitude",
+        "asn",
     ]
 
     with open(csv_path, "a", newline="", encoding="utf-8") as fh:
@@ -169,9 +179,7 @@ def get_all_logs(db_path: str | None = None) -> list[dict[str, Any]]:
     """
     conn = get_db_connection(db_path)
     try:
-        cursor = conn.execute(
-            "SELECT * FROM attack_logs ORDER BY timestamp DESC"
-        )
+        cursor = conn.execute("SELECT * FROM attack_logs ORDER BY timestamp DESC")
         return [dict(row) for row in cursor.fetchall()]
     finally:
         conn.close()
@@ -189,9 +197,7 @@ def get_latest(limit: int = 50, db_path: str | None = None) -> list[dict[str, An
     """
     conn = get_db_connection(db_path)
     try:
-        cursor = conn.execute(
-            "SELECT * FROM attack_logs ORDER BY timestamp DESC LIMIT ?", (limit,)
-        )
+        cursor = conn.execute("SELECT * FROM attack_logs ORDER BY timestamp DESC LIMIT ?", (limit,))
         return [dict(row) for row in cursor.fetchall()]
     finally:
         conn.close()
@@ -479,9 +485,7 @@ def export_excel(
     """
     import pandas as pd
 
-    path = output_path or os.path.join(
-        os.path.dirname(config.database.db_path), "attack_logs_export.xlsx"
-    )
+    path = output_path or os.path.join(os.path.dirname(config.database.db_path), "attack_logs_export.xlsx")
     if data is None:
         data = get_all_logs(db_path)
 
@@ -507,9 +511,7 @@ def export_json(
     Returns:
         The path to the exported file.
     """
-    path = output_path or os.path.join(
-        os.path.dirname(config.database.db_path), "attack_logs_export.json"
-    )
+    path = output_path or os.path.join(os.path.dirname(config.database.db_path), "attack_logs_export.json")
     if data is None:
         data = get_all_logs(db_path)
 
@@ -535,9 +537,7 @@ def get_today_count(db_path: str | None = None) -> int:
     conn = get_db_connection(db_path)
     try:
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        cursor = conn.execute(
-            "SELECT COUNT(*) FROM attack_logs WHERE timestamp >= ?", (today,)
-        )
+        cursor = conn.execute("SELECT COUNT(*) FROM attack_logs WHERE timestamp >= ?", (today,))
         return cursor.fetchone()[0]
     finally:
         conn.close()
@@ -557,9 +557,7 @@ def get_unique_countries(db_path: str | None = None) -> int:
     """Get count of unique countries."""
     conn = get_db_connection(db_path)
     try:
-        cursor = conn.execute(
-            "SELECT COUNT(DISTINCT country) FROM attack_logs WHERE country != 'Unknown'"
-        )
+        cursor = conn.execute("SELECT COUNT(DISTINCT country) FROM attack_logs WHERE country != 'Unknown'")
         return cursor.fetchone()[0]
     finally:
         conn.close()

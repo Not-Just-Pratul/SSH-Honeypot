@@ -59,18 +59,14 @@ class TestDatabaseConnection:
     def test_schema_creates_table(self, temp_db_path):
         """Schema should create the attack_logs table."""
         conn = get_db_connection(temp_db_path)
-        cursor = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='attack_logs'"
-        )
+        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='attack_logs'")
         assert cursor.fetchone() is not None
         conn.close()
 
     def test_schema_creates_indexes(self, temp_db_path):
         """Schema should create required indexes."""
         conn = get_db_connection(temp_db_path)
-        cursor = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='index' AND sql IS NOT NULL"
-        )
+        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='index' AND sql IS NOT NULL")
         indexes = [row["name"] for row in cursor.fetchall()]
         assert any("ip" in idx for idx in indexes)
         assert any("timestamp" in idx for idx in indexes)
@@ -225,9 +221,7 @@ class TestQueryFunctions:
     def test_filter_logs_combined(self, temp_db_path):
         """Should combine multiple filters with AND logic."""
         self._insert_sample_data(temp_db_path)
-        results = filter_logs(
-            ip="1.1.1.1", username="root", db_path=temp_db_path
-        )
+        results = filter_logs(ip="1.1.1.1", username="root", db_path=temp_db_path)
         assert len(results) == 2
 
     def test_empty_database_queries(self, temp_db_path):
