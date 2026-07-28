@@ -7,7 +7,7 @@ name = "ssh-honeypot"
 version = "1.0.0"
 description = "SSH Honeypot with live SOC dashboard, REST API, GeoIP enrichment, brute-force detection, and multi-channel alerts"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.10"
 authors = [
     {name = "Not-Just-Pratul", email = "buildwithpratul@gmail.com"},

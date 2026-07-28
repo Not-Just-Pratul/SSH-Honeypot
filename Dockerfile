@@ -19,11 +19,15 @@ RUN apt-get update && \
         && \
     rm -rf /var/lib/apt/lists/*
 
+# Copy source needed for building
+COPY src/ ./src/
+COPY README.md ./
+COPY pyproject.toml ./
+
 # Install Python dependencies in virtual env
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY pyproject.toml ./
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir --no-build-isolation .
 
