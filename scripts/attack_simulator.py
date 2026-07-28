@@ -12,7 +12,6 @@ Examples:
     python scripts/attack_simulator.py 10 --delay 1 # 10 attacks, 1s apart
 """
 
-import socket
 import subprocess
 import sys
 import time
@@ -27,60 +26,34 @@ USERNAMES = [
     "ansible", "redis", "mongodb", "elastic", "docker",
 ]
 
-# Common SSH client banners
-BANNERS = [
-    "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.4",
-    "SSH-2.0-OpenSSH_9.0p1 Debian-1",
-    "SSH-2.0-OpenSSH_8.0",
-    "SSH-2.0-OpenSSH_7.9",
-    "SSH-2.0-libssh2_1.11.1",
-    "SSH-2.0-libssh_0.9.6",
-    "SSH-2.0-PuTTY_Release_0.79",
-    "SSH-2.0-Paramiko_3.4.0",
-    "SSH-2.0-dropbear_2022.83",
-    "SSH-2.0-mobileSSH",
-]
-
 
 def simulate_ssh_attack(host: str = "127.0.0.1", port: int = 2222) -> bool:
-    """Simulate a single SSH connection attempt using the system ssh client.
+    """Simulate an SSH connection using the system SSH client.
 
-    Returns True if the connection was attempted.
+    Uses the OpenSSH client with BatchMode=yes. The honeypot will:
+    1. Accept the TCP connection
+    2. Complete the SSH transport negotiation
+    3. Receive the 'none' authentication attempt
+    4. Log and reject it
     """
     username = random.choice(USERNAMES)
     try:
-        result = subprocess.run(
+        subprocess.run(
             [
                 "ssh",
                 "-p", str(port),
                 "-o", "StrictHostKeyChecking=no",
-                "-o", "UserKnownHostsFile=NUL",
-                "-o", "ConnectTimeout=3",
+                "-o", "UserKnownHostsFile=" + ("NUL" if sys.platform == "win32" else "/dev/null"),
+                "-o", "ConnectTimeout=5",
                 "-o", "BatchMode=yes",
+                "-o", "LogLevel=ERROR",
                 f"{username}@{host}",
             ],
             capture_output=True,
-            timeout=5,
+            timeout=6,
         )
         return True
     except subprocess.TimeoutExpired:
-        return True
-    except Exception:
-        return simulate_raw_ssh_attempt(host, port, username)
-
-
-def simulate_raw_ssh_attempt(host: str, port: int, username: str) -> bool:
-    """Simulate an SSH connection at the raw socket level."""
-    try:
-        sock = socket.socket()
-        sock.settimeout(3)
-        sock.connect((host, port))
-        # Send client banner
-        banner = random.choice(BANNERS)
-        sock.send(f"{banner}\r\n".encode())
-        # Read server banner
-        sock.recv(1024)
-        sock.close()
         return True
     except Exception:
         return False

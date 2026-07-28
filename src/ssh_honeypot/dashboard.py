@@ -507,11 +507,11 @@ def _render_charts(df: pd.DataFrame, theme: str) -> None:
 
 
 def _render_map(df: pd.DataFrame) -> None:
-    """Render the interactive Folium geolocation map."""
+    """Render the interactive Folium geolocation map with GeoIP setup guidance."""
     st.markdown('<div class="section-title">Interactive Map</div>', unsafe_allow_html=True)
 
-    if df.empty or "latitude" not in df.columns or "longitude" not in df.columns:
-        st.info("No geolocation data available for map display.")
+    if df.empty:
+        st.info("No attack data available yet. Waiting for connections...")
         return
 
     valid = df[
@@ -520,7 +520,42 @@ def _render_map(df: pd.DataFrame) -> None:
     ]
 
     if valid.empty:
-        st.info("No valid geolocation coordinates found in attack data.")
+        c = _c(st.session_state.get("theme", "dark"))
+        st.markdown(
+            f"""
+            <div style="
+                background:{c['canvas_soft']};
+                border:1px solid {c['accent_yellow']};
+                border-radius:4px; padding:16px; margin-bottom:16px;
+            ">
+                <div style="color:{c['accent_yellow']}; font-weight:600; margin-bottom:8px;">
+                    ⚡ GeoIP Not Configured
+                </div>
+                <div style="color:{c['body']}; font-size:13px; line-height:1.6;">
+                    The geolocation map requires MaxMind GeoLite2 databases.
+                    Download them from
+                    <a href="https://dev.maxmind.com/geoip/geolite2-free-geolocation-data"
+                       style="color:{c['accent_cyan']};">MaxMind</a>
+                    and set in <code>.env</code>:<br>
+                    <code>GEOIP_CITY_DB=path/to/GeoLite2-City.mmdb</code><br>
+                    <code>GEOIP_ASN_DB=path/to/GeoLite2-ASN.mmdb</code>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # Show a preview table of IPs with their coordinates even without GeoIP
+        st.markdown(f'<div style="color:{c["body"]}; font-size:13px; margin-bottom:8px;">Attack source IPs (add GeoIP to enable mapping):</div>', unsafe_allow_html=True)
+        ip_preview = df.groupby("ip").agg(
+            Attacks=("username", "count"),
+            Last_Seen=("timestamp", "max"),
+            Usernames=("username", lambda x: ", ".join(sorted(x.unique())[:5]))
+        ).reset_index().sort_values("Attacks", ascending=False).head(10)
+        st.dataframe(
+            ip_preview.rename(columns={"ip": "IP Address", "Attacks": "Attempts", "Last_Seen": "Last Seen", "Usernames": "Usernames"}),
+            width="stretch", height=350, hide_index=True,
+        )
         return
 
     m = folium.Map(location=[20, 0], zoom_start=2, tiles="CartoDB dark_matter")
@@ -538,9 +573,10 @@ def _render_map(df: pd.DataFrame) -> None:
             f'<b>ASN:</b> {_escape_html(row.get("asn", "N/A"))}'
             f'</div>'
         )
+        radius = min(max(row.get("attempts", 1) * 2, 4), 20)
         folium.CircleMarker(
             location=[row["latitude"], row["longitude"]],
-            radius=5, popup=folium.Popup(popup_html, max_width=300),
+            radius=radius, popup=folium.Popup(popup_html, max_width=300),
             color="#ef476f", fill=True, fill_color="#ef476f", fill_opacity=0.7, weight=1,
         ).add_to(m)
 
@@ -548,26 +584,68 @@ def _render_map(df: pd.DataFrame) -> None:
 
 
 def _render_live_feed(df: pd.DataFrame, theme: str) -> None:
-    """Render the live attack feed."""
+    """Render the live attack feed with rich details and auto-refresh."""
+    c = _c(theme)
     st.markdown('<div class="section-title">Live Feed</div>', unsafe_allow_html=True)
 
     if df.empty:
         st.info("No attack data yet. Waiting for connections...")
         return
 
-    feed_df = df[["timestamp", "ip", "country", "username", "status"]].head(50)
+    # Auto-refresh control - checks every 5s when enabled
+    import time as _time
+    auto_refresh = st.checkbox("Auto-refresh (5s)", value=True, key="feed_autorefresh")
+    if auto_refresh:
+        placeholder = st.empty()
+        with placeholder:
+            _time.sleep(5)
+        st.rerun()
+
+    col_count = len(df)
+    last_min = df[df["timestamp"] >= (pd.Timestamp.now() - pd.Timedelta(minutes=1)).isoformat()] if "timestamp" in df.columns else pd.DataFrame()
+    st.markdown(
+        f'<div style="color:{c["body"]}; font-size:12px; margin-bottom:12px;">'
+        f'{col_count} total events | {len(last_min)} in last 60s '
+        f'| showing latest 50'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    feed_df = df[["timestamp", "ip", "country", "username", "auth_method", "attempts", "asn", "status"]].head(50)
 
     for _, row in feed_df.iterrows():
-        badge_class = "badge-fail" if row["status"] == "failure" else "badge-ok"
-        status_label = "FAILED" if row["status"] == "failure" else "OK"
+        timestamp = str(row.get("timestamp", ""))[:19] if row.get("timestamp") else ""
+        ip = _escape_html(row.get("ip", ""))
+        country = _escape_html(row.get("country", "??"))
+        username = _escape_html(row.get("username", ""))
+        auth_method = _escape_html(row.get("auth_method", "?"))
+        attempts = int(row.get("attempts", 1))
+        asn = _escape_html(str(row.get("asn", ""))[:12])
+        status = str(row.get("status", "failure"))
+
+        # Color-code auth methods
+        auth_colors = {
+            "password": c["accent_red"],
+            "publickey": c["accent_yellow"],
+            "keyboard-interactive": c["accent_purple"],
+            "none": c["accent_cyan"],
+        }
+        auth_color = auth_colors.get(row.get("auth_method", ""), c["mute"])
+
+        badge_class = "badge-fail" if status == "failure" else "badge-ok"
+        status_label = "FAIL" if status == "failure" else "OK"
+
         st.markdown(
             f"""
             <div class="feed-row">
-                <span class="feed-time">{_escape_html(row.get('timestamp', ''))}</span>
-                <span class="feed-ip">{_escape_html(row.get('ip', ''))}</span>
-                <span class="feed-country">{_escape_html(row.get('country', ''))}</span>
-                <span class="feed-user">{_escape_html(row.get('username', ''))}</span>
-                <span class="feed-badge {badge_class}">{_escape_html(status_label)}</span>
+                <span class="feed-time">{_escape_html(timestamp)}</span>
+                <span class="feed-ip">{ip}</span>
+                <span class="feed-country">{country}</span>
+                <span class="feed-user">{username}</span>
+                <span style="color:{auth_color}; font-size:11px; min-width:60px;">{auth_method}</span>
+                <span style="color:{c['mute']}; font-size:11px; min-width:20px;">x{attempts}</span>
+                <span style="color:{c['body']}; font-size:10px; min-width:80px;">{asn}</span>
+                <span class="feed-badge {badge_class}">{status_label}</span>
             </div>
             """,
             unsafe_allow_html=True,
@@ -576,13 +654,29 @@ def _render_live_feed(df: pd.DataFrame, theme: str) -> None:
 
 def _render_filters(df: pd.DataFrame) -> pd.DataFrame:
     """Render filter controls and return filtered dataframe."""
+    c = _c(st.session_state.get("theme", "dark"))
     st.markdown('<div class="section-title">Filters & Search</div>', unsafe_allow_html=True)
 
-    with st.expander("Filter Attacks", expanded=False):
+    total = len(df)
+    st.markdown(
+        f'<div style="color:{c["body"]}; font-size:13px; margin-bottom:12px;">'
+        f'<b>{total}</b> record{"s" if total != 1 else ""} in database'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("Filter Attacks", expanded=True):
         cols = st.columns(4)
         with cols[0]:
-            all_countries = sorted(df["country"].unique().tolist()) if "country" in df.columns and not df.empty else []
-            st.multiselect("Country", all_countries, key="country_filter")
+            all_countries = sorted(
+                [x for x in df["country"].unique().tolist() if x != "Unknown"]
+            ) if "country" in df.columns and not df.empty else []
+            unknown_country = len(df[df["country"] == "Unknown"]) if "country" in df.columns else 0
+            country_options = all_countries
+            if unknown_country > 0:
+                country_options = ["Unknown (no GeoIP)"] + all_countries
+            st.multiselect("Country", country_options, key="country_filter",
+                           help=f"Unknown: {unknown_country} records (install GeoIP to resolve)" if unknown_country > 0 else "Filter by country")
         with cols[1]:
             all_usernames = sorted(df["username"].unique().tolist()) if "username" in df.columns and not df.empty else []
             st.multiselect("Username", all_usernames, key="username_filter")
@@ -608,7 +702,9 @@ def _render_filters(df: pd.DataFrame) -> pd.DataFrame:
     ip_filter = st.session_state.get("ip_filter", [])
 
     if country_filter:
-        result = result[result["country"].isin(country_filter)]
+        # Map "Unknown (no GeoIP)" label back to "Unknown" in data
+        mapped = ["Unknown" if v == "Unknown (no GeoIP)" else v for v in country_filter]
+        result = result[result["country"].isin(mapped)]
     if username_filter:
         result = result[result["username"].isin(username_filter)]
     if status_filter:
@@ -630,7 +726,8 @@ def _render_filters(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _render_stats_tab(df: pd.DataFrame) -> None:
-    """Render in-depth statistics tab."""
+    """Render in-depth statistics tab with rich visualizations."""
+    c = _c(st.session_state.get("theme", "dark"))
     st.markdown('<div class="section-title">Statistics</div>', unsafe_allow_html=True)
 
     if df.empty:
@@ -639,31 +736,114 @@ def _render_stats_tab(df: pd.DataFrame) -> None:
 
     unique_ips = get_unique_ips()
     unique_countries = get_unique_countries()
+    total = len(df)
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f'<div class="stat-card"><div class="stat-label">Unique Countries</div><div class="stat-value">{unique_countries}</div></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="stat-card"><div class="stat-label">Total Attackers</div><div class="stat-value">{unique_ips}</div></div>', unsafe_allow_html=True)
-        avg_per_ip = round(len(df) / unique_ips, 2) if unique_ips > 0 else 0
-        st.markdown(f'<div class="stat-card"><div class="stat-label">Avg Attacks per IP</div><div class="stat-value">{avg_per_ip}</div></div>', unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f'<div class="stat-card"><div class="stat-label">Most Targeted Usernames</div>', unsafe_allow_html=True)
-        for user, count in df["username"].value_counts().head(5).items():
-            st.markdown(f"- `{_escape_html(user)}` — {count} attempts")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col3:
+    # ---- Row 1: Key KPIs ----
+    k1, k2, k3, k4, k5 = st.columns(5)
+    with k1:
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Total Attacks</div><div class="stat-value">{total:,}</div></div>', unsafe_allow_html=True)
+    with k2:
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Unique IPs</div><div class="stat-value">{unique_ips:,}</div></div>', unsafe_allow_html=True)
+    with k3:
+        avg = round(total / unique_ips, 1) if unique_ips > 0 else 0
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Avg per IP</div><div class="stat-value">{avg}</div></div>', unsafe_allow_html=True)
+    with k4:
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Countries</div><div class="stat-value">{unique_countries}</div></div>', unsafe_allow_html=True)
+    with k5:
         if "timestamp" in df.columns:
-            df["hour"] = pd.to_datetime(df["timestamp"]).dt.hour
-            peak = df["hour"].mode()
-            peak_hour = int(peak[0]) if len(peak) > 0 else 0
-            st.markdown(f'<div class="stat-card"><div class="stat-label">Peak Attack Hour</div><div class="stat-value">{peak_hour:02d}:00</div></div>', unsafe_allow_html=True)
+            ts = pd.to_datetime(df["timestamp"])
+            peak_hour = int(ts.dt.hour.mode().iloc[0]) if len(ts) > 0 else 0
+            st.markdown(f'<div class="stat-card"><div class="stat-label">Peak Hour (UTC)</div><div class="stat-value">{peak_hour:02d}:00</div></div>', unsafe_allow_html=True)
 
-        st.markdown(f'<div class="stat-card"><div class="stat-label">Top Countries</div>', unsafe_allow_html=True)
-        for country, count in df["country"].value_counts().head(5).items():
-            st.markdown(f"- `{_escape_html(country)}` — {count} attacks")
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("<hr style='opacity:0.15; margin:12px 0;'>", unsafe_allow_html=True)
+
+    # ---- Row 2: Charts (3 columns) ----
+    col_a, col_b = st.columns([3, 2])
+
+    with col_a:
+        # Hourly timeline
+        if "timestamp" in df.columns:
+            st.markdown(f'<div class="stat-card"><div class="stat-label">Hourly Attack Timeline</div></div>', unsafe_allow_html=True)
+            ts = pd.to_datetime(df["timestamp"])
+            ts_group = ts.dt.floor("h").value_counts().sort_index()
+            hourly_df = pd.DataFrame({
+                "hour": ts_group.index,
+                "attacks": ts_group.values,
+            })
+            fig = px.bar(
+                hourly_df, x="hour", y="attacks",
+                labels={"hour": "", "attacks": "Attacks"},
+                color_discrete_sequence=["#f77f00"],
+                height=220,
+            )
+            fig.update_layout(
+                margin=dict(l=10, r=10, t=10, b=30),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                xaxis=dict(showgrid=False, color=c["body"], tickformat="%H:%M"),
+                yaxis=dict(showgrid=True, gridcolor=c["hairline"], color=c["body"]),
+                hovermode="x",
+            )
+            st.plotly_chart(fig, width="stretch", use_container_width=True)
+
+        # Auth method breakdown
+        if "auth_method" in df.columns:
+            st.markdown(f'<div class="stat-card"><div class="stat-label">Auth Method Breakdown</div></div>', unsafe_allow_html=True)
+            auth_counts = df["auth_method"].value_counts().reset_index()
+            auth_counts.columns = ["method", "count"]
+            fig2 = px.pie(
+                auth_counts, values="count", names="method",
+                color_discrete_sequence=["#ef476f", "#f77f00", "#118ab2", "#06d6a0", "#c9c0ad"],
+                height=260,
+            )
+            fig2.update_layout(
+                margin=dict(l=10, r=10, t=10, b=10),
+                paper_bgcolor="rgba(0,0,0,0)",
+                showlegend=False,
+            )
+            fig2.update_traces(textinfo="label+percent", textfont_color=c["body_strong"])
+            st.plotly_chart(fig2, width="stretch", use_container_width=True)
+
+    with col_b:
+        # Top attackers table
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Top 10 Attacking IPs</div></div>', unsafe_allow_html=True)
+        top_ips = df["ip"].value_counts().head(10).reset_index()
+        top_ips.columns = ["IP", "Attacks"]
+        top_ips["Rank"] = range(1, len(top_ips) + 1)
+        st.dataframe(
+            top_ips[["Rank", "IP", "Attacks"]],
+            width="stretch", height=300, hide_index=True,
+        )
+
+        # Most targeted usernames
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Most Targeted Usernames</div></div>', unsafe_allow_html=True)
+        top_users = df["username"].value_counts().head(10).reset_index()
+        top_users.columns = ["Username", "Attacks"]
+        top_users["Rank"] = range(1, len(top_users) + 1)
+        st.dataframe(
+            top_users[["Rank", "Username", "Attacks"]],
+            width="stretch", height=300, hide_index=True,
+        )
+
+    st.markdown("<hr style='opacity:0.15; margin:12px 0;'>", unsafe_allow_html=True)
+
+    # ---- Row 3: More detailed breakdowns ----
+    col_x, col_y, col_z = st.columns(3)
+    with col_x:
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Unique Usernames</div><div class="stat-value">{df["username"].nunique()}</div></div>', unsafe_allow_html=True)
+    with col_y:
+        total_unique = df["username"].nunique()
+        pct = round(total_unique / total * 100, 1) if total > 0 else 0
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Username Diversity</div><div class="stat-value">{pct}%</div></div>', unsafe_allow_html=True)
+    with col_z:
+        if "auth_method" in df.columns:
+            top_method = df["auth_method"].value_counts().index[0] if len(df) > 0 else "?"
+            pct_method = round(df["auth_method"].value_counts().iloc[0] / total * 100, 1) if total > 0 else 0
+            st.markdown(f'<div class="stat-card"><div class="stat-label">Top Auth Method</div><div class="stat-value">{pct_method}%</div><div class="stat-sub">{top_method}</div></div>', unsafe_allow_html=True)
+
+    if unique_ips > 0:
+        top_ip = df["ip"].value_counts().index[0]
+        top_ip_pct = round(df["ip"].value_counts().iloc[0] / total * 100, 1)
+        st.markdown(f'<div class="stat-card"><div class="stat-label">Top Attacker</div><div class="stat-value">{top_ip}</div><div class="stat-sub">{top_ip_pct}% of all attacks</div></div>', unsafe_allow_html=True)
 
 
 def _export_pdf() -> str:
