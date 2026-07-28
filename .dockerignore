@@ -48,12 +48,9 @@ docker-compose.yml
 Dockerfile
 .dockerignore
 
-# Documentation (not needed at runtime)
-*.md
-LICENSE
-CONTRIBUTING.md
-CHANGELOG.md
-SECURITY.md
-CODE_OF_CONDUCT.md
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
 .pre-commit-config.yaml
 design.md
