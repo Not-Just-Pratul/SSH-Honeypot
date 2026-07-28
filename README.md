@@ -18,6 +18,7 @@
 ## 📋 Table of Contents
 
 - [Features](#-features)
+- [Screenshots](#-screenshots)
 - [Architecture](#-architecture)
 - [Quick Start](#-quick-start)
 - [Usage](#-usage)
@@ -72,6 +73,33 @@
 - **Slack** — Block Kit structured messages
 - **Email** — SMTP-based alerts
 - **All async** — Non-blocking background delivery
+
+---
+
+### Screenshots
+
+<div align="center">
+  <img src="screenshots/dashboard-overview.png" alt="Dashboard Overview" width="700"/>
+  <p><em>Overview — summary stats, attack timeline, and country breakdown</em></p>
+
+  <img src="screenshots/Charts.png" alt="Charts & Visualizations" width="700"/>
+  <p><em>Charts — hourly trends, top usernames, country distribution, auth vectors</em></p>
+
+  <img src="screenshots/Charts 2.png" alt="Additional Charts" width="700"/>
+  <p><em>Charts — IP bar, ASN breakdown, heatmap, and attack patterns</em></p>
+
+  <img src="screenshots/dashboard-map.png" alt="Interactive Attack Map" width="700"/>
+  <p><em>Interactive Map — attacker geolocations with country and ASN details</em></p>
+
+  <img src="screenshots/dashboard-feed.png" alt="Live Attack Feed" width="700"/>
+  <p><em>Live Feed — real-time scrolling feed of latest attacks</em></p>
+
+  <img src="screenshots/dashboard-stats.png" alt="Statistics Tab" width="700"/>
+  <p><em>Statistics — top attackers, peak hours, unique counts</em></p>
+
+  <img src="screenshots/Telegram Integration.png" alt="Telegram Alert Notification" width="700"/>
+  <p><em>Telegram Alerts — real-time attack notifications sent to your phone</em></p>
+</div>
 
 ---
 
@@ -247,28 +275,6 @@ The SOC dashboard provides real-time monitoring of all captured attack data:
 | **Export** | CSV, JSON, Excel (.xlsx), or PDF report |
 
 > 🎨 Toggle between **dark** and **light** themes in the sidebar.
-
-### Screenshots
-
-<div align="center">
-  <img src="screenshots/dashboard-overview.png" alt="Dashboard Overview" width="700"/>
-  <p><em>Overview — summary stats, attack timeline, and country breakdown</em></p>
-
-  <img src="screenshots/dashboard-map.png" alt="Interactive Attack Map" width="700"/>
-  <p><em>Interactive Map — attacker geolocations with country and ASN details</em></p>
-
-  <img src="screenshots/dashboard-feed.png" alt="Live Attack Feed" width="700"/>
-  <p><em>Live Feed — real-time scrolling feed of latest attacks</em></p>
-
-  <img src="screenshots/dashboard-stats.png" alt="Statistics Tab" width="700"/>
-  <p><em>Statistics — top attackers, peak hours, unique counts</em></p>
-
-  <img src="screenshots/Charts.png" alt="Charts & Visualizations" width="700"/>
-  <p><em>Charts — hourly trends, top usernames, country distribution, auth vectors</em></p>
-
-  <img src="screenshots/Charts 2.png" alt="Additional Charts" width="700"/>
-  <p><em>Charts — IP bar, ASN breakdown, heatmap, and attack patterns</em></p>
-</div>
 
 ---
 
